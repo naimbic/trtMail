@@ -14,23 +14,8 @@ export async function cfRequest<T>(
 	path: string,
 	init?: RequestInit,
 ): Promise<T> {
-	const auth = getCloudflareAuth(env);
-	const res = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
-		...init,
-		headers: {
-			...getCloudflareAuthHeaders(auth),
-			"Content-Type": "application/json",
-			...(init?.headers ?? {}),
-		},
-	});
-	const json = (await res.json()) as CfResponse<T>;
+	throw new Error("Cloudflare operations are disabled in this Coolify installation. Configure DNS and routing at your mail provider.");
 
-	if (!json.success) {
-		throw new Error(
-			`${formatCloudflareError(path, res.status, res.statusText, json.errors ?? [])}${getCloudflareAuthHint(json.errors ?? [])}`,
-		);
-	}
-	return json.result;
 }
 
 export async function findZoneByHostname(
@@ -203,30 +188,7 @@ export async function ensureEmailRoutingRuleToWorker(
 	zoneId: string,
 	address: string,
 ) {
-	const normalized = address.toLowerCase();
-	const workerName = getEmailWorkerName(env);
-	const rules = await listEmailRoutingRules(env, zoneId);
-	const existing = rules.find((rule) => isWorkerRouteForAddress(rule, normalized, workerName));
-
-	if (existing?.enabled) return existing;
-	if (existing?.id) {
-		return cfRequest<CfEmailRoutingRule>(
-			env,
-			`/zones/${zoneId}/email/routing/rules/${existing.id}`,
-			{
-				method: "PUT",
-				body: JSON.stringify({
-					actions: [{ type: "worker", value: [workerName] }],
-					enabled: true,
-					matchers: [{ type: "literal", field: "to", value: normalized }],
-					name: existing.name ?? `Route ${normalized} to ${workerName}`,
-					priority: existing.priority,
-				}),
-			},
-		);
-	}
-
-	return createEmailRoutingRuleToWorker(env, zoneId, normalized);
+ return undefined;
 }
 
 export async function deleteEmailRoutingRuleForAddress(
@@ -234,11 +196,5 @@ export async function deleteEmailRoutingRuleForAddress(
 	zoneId: string,
 	address: string,
 ): Promise<boolean> {
-	const normalized = address.toLowerCase();
-	const workerName = getEmailWorkerName(env);
-	const rules = await listEmailRoutingRules(env, zoneId);
-	const existing = rules.find((rule) => isWorkerRouteForAddress(rule, normalized, workerName));
-	if (!existing?.id) return false;
-	await deleteEmailRoutingRule(env, zoneId, existing.id);
-	return true;
+ return false;
 }

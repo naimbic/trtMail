@@ -5,6 +5,7 @@ import { getLatestEmailContent, htmlToReadableText } from "@/lib/email/reply-con
 import type { AttachmentContent } from "@/lib/email/attachment-types";
 
 export type ParsedEmail = {
+ headers: Record<string,string>;
 	subject: string | null;
 	text: string | null;
 	html: string | null;
@@ -19,6 +20,7 @@ export async function parseRawMime(raw: ArrayBuffer): Promise<ParsedEmail> {
 	const email = await PostalMime.parse(raw);
 	const date = email.date ? new Date(email.date) : null;
 	return {
+		headers: Object.fromEntries(email.headers.map(h=>[h.key.toLowerCase(),h.value])),
 		subject: email.subject ?? null,
 		text: email.text ?? null,
 		html: email.html ?? null,

@@ -91,8 +91,7 @@ export default function DomainsPage() {
         <div>
           <h1 className="text-3xl font-medium">Domains</h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Domains must be on your Cloudflare account. Adding a domain enables
-            Email Routing and Email Sending DNS automatically.
+            Connect domains already configured at your email provider. Add approved domains to MAIL_DOMAINS in Coolify.
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -106,8 +105,7 @@ export default function DomainsPage() {
             <DialogHeader>
               <DialogTitle>Add domain</DialogTitle>
               <DialogDescription>
-                Provision Cloudflare routing and sending DNS for a zone in your
-                account.
+                Add a domain managed by your existing mail provider. This does not change DNS or create provider mailboxes.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">

@@ -53,14 +53,5 @@ export async function notifyUsersOfNewMessage(
 	userIds: string[],
 	payload: NewMessageNotification,
 ): Promise<void> {
-	await Promise.allSettled(
-		userIds.map((userId) => {
-			const hub = env.REALTIME.getByName(userId);
-			return hub.fetch("https://mailflare-realtime/notify", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
-			});
-		}),
-	);
+ // The Node client refreshes message counts and lists on a short polling interval.
 }

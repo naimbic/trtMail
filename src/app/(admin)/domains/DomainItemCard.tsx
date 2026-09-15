@@ -34,7 +34,7 @@ export default function DomainItemCard({ item, dns, remove, loadDns }: any) {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => loadDns(item.id)}>
-            DNS
+            Details
           </Button>
           <Button
             variant="destructive"
@@ -47,45 +47,7 @@ export default function DomainItemCard({ item, dns, remove, loadDns }: any) {
           </Button>
         </div>
       </div>
-      {dns && (
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="flex items-center gap-1 text-neutral-500">
-            Routing{" "}
-            {dns.routing.configured ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-          </span>
-          {dns.routing.missing.length > 0 && (
-            <span className="text-red-600 flex items-center gap-1">
-              <X className="h-3 w-3" />
-              Missing: {dns.routing.missing.join(", ")}
-            </span>
-          )}
-          <span className="text-neutral-300">|</span>
-          <span className="flex items-center gap-1 text-neutral-500">
-            Sending{" "}
-            {dns.sending.configured ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-          </span>
-          {dns.sending.records.length > 0 && (
-            <span className="text-neutral-500">
-              {dns.sending.records.join(", ")}
-            </span>
-          )}
-          <button
-            onClick={() => loadDns(item.id)}
-            className="flex items-center gap-0.5 text-blue-600 hover:text-blue-800"
-          >
-            <ArrowRight className="h-3 w-3" />
-            details
-          </button>
-        </div>
-      )}
+      <p className="text-xs text-neutral-500">DNS and mailbox delivery are managed by your email provider.</p>
     </div>
   );
 }

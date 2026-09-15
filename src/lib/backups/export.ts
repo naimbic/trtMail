@@ -57,20 +57,18 @@ export async function restoreDatabaseRecords(db: D1Database, content: ArrayBuffe
 	mergeLegacyMessageBodies(document);
 	fillMissingBackupTables(document);
 	validateDatabaseBackup(document);
-	for (const table of [...BACKUP_TABLES].reverse()) await db.prepare(`DELETE FROM ${table}`).run();
-	for (const table of BACKUP_TABLES) {
-		const rows = document.tables[table];
-		for (let index = 0; index < rows.length; index += INSERT_BATCH_SIZE) {
-			const statements = rows.slice(index, index + INSERT_BATCH_SIZE).map((row) => createInsertStatement(db, table, row));
-			if (statements.length > 0) await db.batch(statements);
-		}
-	}
+	const statements: D1PreparedStatement[] = [db.prepare("PRAGMA defer_foreign_keys=ON")];
+ for(const table of [...BACKUP_TABLES].reverse())statements.push(db.prepare(`DELETE FROM ${table}`));
+ for(const table of BACKUP_TABLES)for(const row of document.tables[table])statements.push(createInsertStatement(db,table,row));
+ // One atomic transaction: malformed backups must never leave a partially erased mailbox.
+ await db.batch(statements);
+
 }
 
 function parseDatabaseBackup(content: ArrayBuffer): DatabaseBackupDocument {
 	let value: unknown;
-	try { value = JSON.parse(new TextDecoder().decode(content)); } catch { throw new Error("The selected file is not a valid Mailflare backup"); }
-	if (!isDatabaseBackupDocument(value)) throw new Error("The selected file is not a valid Mailflare backup");
+	try { value = JSON.parse(new TextDecoder().decode(content)); } catch { throw new Error("The selected file is not a valid trtMail backup"); }
+	if (!isDatabaseBackupDocument(value)) throw new Error("The selected file is not a valid trtMail backup");
 	return value;
 }
 

@@ -1,55 +1,21 @@
-# Troubleshooting
+# trtMail troubleshooting
 
-## Cloudflare error 9109: Invalid access token
+## Container exits on first startup
 
-The Deploy to Cloudflare flow can deploy the Worker, but its deployment token is not exposed to Mailflare at runtime. Create a separate Cloudflare API token and set it as `CF_TOKEN`.
+Set ADMIN_EMAIL, ADMIN_PASSWORD (at least 16 characters), and MAIL_ADDRESS. Mount writable persistent storage at /data. See [Coolify setup](coolify.md).
 
-Verify the token:
+## Incoming mail is missing
 
-```bash
-curl "https://api.cloudflare.com/client/v4/user/tokens/verify" \
-  -H "Authorization: Bearer <CF_TOKEN>"
-```
+Confirm IMAP_HOST=mail.trtdigital.eu, IMAP_PORT=993, IMAP_SECURE=true and the mailbox credentials. The admin page shows the last sync result. Initial synchronization defaults to new arrivals only; use manual import for older mail.
 
-The response should report `success: true` and an active status. Check that:
+## Outgoing mail fails
 
-- `CF_TOKEN` contains the token secret, not its ID.
-- The value does not include the word `Bearer`.
-- The token is currently valid and its IP restrictions allow the Worker.
-- You redeployed after changing Cloudflare variables or secrets.
+Confirm SMTP_HOST=mail.trtdigital.eu, SMTP_PORT=587, SMTP_SECURE=false, SMTP_USER and SMTP_PASSWORD. The FROM address must be present in SMTP_ALLOWED_FROM. Never resend blindly after a timeout: first check your provider's delivery logs.
 
-If you use a legacy Global API Key, set `CF_EMAIL` and `CF_API_KEY` instead of placing it in `CF_TOKEN`.
+## Cloudflare configuration errors
 
-## Cloudflare error 10000 on Email Routing
+This version deploys with the repository Dockerfile on Coolify. Cloudflare Worker names, D1 IDs and CF_TOKEN are not required. Select the Dockerfile build pack and expose port 3000.
 
-Update the token so it can read the zone and manage its DNS, Email Routing settings, and Email Routing rules. The recommended scoped permissions are listed in the [deployment guide](deployment.md#required-configuration).
+## Data after upgrades
 
-## D1 error 7404: Database could not be found
-
-D1 database IDs belong to a specific Cloudflare account. This error commonly means `wrangler.jsonc` contains an ID copied from another account.
-
-For a reusable one-click deployment repository, remove the committed `database_id` and keep only `database_name`. Cloudflare can then provision the database in the target account.
-
-For remote migrations after the first deployment:
-
-1. Open the Worker's **Settings → Bindings** page in Cloudflare.
-2. Open the `DB` D1 binding and copy its database ID.
-3. Add that ID to your local `wrangler.jsonc`.
-4. Run `npm run db:migrate:remote`.
-
-Do not commit that account-specific ID to a reusable public repository.
-
-## Backup binding is missing
-
-Deploy the complete Worker with `npm run deploy`. A local Next.js server or a source-only update does not provision the `DATABASE_BACKUP_WORKFLOW` binding.
-
-Also confirm that `CF_AID` and `D1_DATABASE_ID` are set, and that `D1_BACKUP_TOKEN` or `CF_TOKEN` can export the database.
-
-## Inbound mail is not arriving
-
-Confirm that:
-
-- `CF_EMAIL_WORKER_NAME` exactly matches the deployed Worker name.
-- `services[].service` in `wrangler.jsonc` uses the same name.
-- Email Routing is enabled for the domain in Cloudflare.
-- The mailbox has an Email Routing rule pointing to the Worker.
+Always reuse the /data volume. The legacy mailflare.sqlite filename, backup format and browser storage keys remain compatible. Startup applies the additive trtMail branding migration without rewriting custom names or existing schema migrations.

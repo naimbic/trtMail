@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandName } from "@/components/brand-name";
 import { useBranding } from "@/components/branding-provider";
 import type { AuthShellProps } from "./types";
 
@@ -33,7 +34,7 @@ export function AuthShell({
                 <img
                   src={iconUrl}
                   onError={() => {
-                    if (iconUrl !== "/icon-96.png") setIconUrl("/icon-96.png");
+                    if (iconUrl !== "/trtmail-icon.svg") setIconUrl("/trtmail-icon.svg");
                     else setIconFailed(true);
                   }}
                   alt=""
@@ -42,7 +43,7 @@ export function AuthShell({
               )}
             </span>
             <span className="truncate text-md font-semibold text-neutral-800">
-              {branding.appName}
+              {<BrandName name={branding.appName} />}
             </span>
           </div>
 

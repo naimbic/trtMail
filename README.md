@@ -1,63 +1,37 @@
-<img src="/public/icon-96.png" alt="Mailflare" width="72" />
+# trtMail
 
-# Mailflare
+Private email workspace for TRT Digital, hosted on your own server through Coolify.
 
-Mailflare is a self-hosted email inbox for custom domains, built on Cloudflare.
+- Web app: `https://mail.trtcrm.com`
+- Mailbox: `hello@trtmaroc.com`
+- Mail server: `mail.trtdigital.eu` — SMTP 587 with STARTTLS, IMAP 993 with TLS
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hieunc229/mailflare)
+## Deploy with Coolify
 
-![Mailflare inbox](/screenshot.png)
+Use the **Dockerfile** build pack, expose port **3000**, and mount a persistent volume at **/data**. Add the runtime variables from [.env.coolify.example](.env.coolify.example). Follow the [deployment guide](docs/coolify.md) for first-run credentials, mail connections, persistence and backups.
 
-## What you can do
+No Cloudflare Worker, D1 ID or Cloudflare API token is needed for this version. Existing email-provider MX records stay in place.
 
-- Connect domains and set up Cloudflare Email Routing from the dashboard.
-- Create personal and shared mailboxes with delegated access.
-- Send and receive email with attachments, rich formatting, signatures, and automatic replies.
-- Organize mail with search, custom folders, stars, snoozing, archive, spam, and trash.
-- Create routing rules to store, forward, reject, or categorize incoming messages.
-- Get real-time inbox updates and new-message notifications.
-- Import and export mail, manage contacts, and block unwanted senders.
-- Manage accounts, permissions, API keys, webhooks, audit logs, and database backups.
+## Features
 
-## How it works
+Inbox, compose and attachments, contacts, calendar, folders, routing filters, API keys, access-controlled mailboxes, backups and CRM lead intake. SMTP and IMAP connect your existing email server. The background worker syncs one provider inbox per installation; other folders can be imported manually.
 
-Mailflare runs in your Cloudflare account. Email Routing delivers incoming messages to the app, while Cloudflare's email service handles outgoing messages. Your mail data stays in your own D1 database and attachments are stored in your own R2 bucket.
+## Development
 
-## How much does it cost?
+Node 24 recommended. Configure private environment variables, then:
 
-You can setup Mailflare and receive email for free
-
-A [Paid Worker](https://developers.cloudflare.com/workers/platform/pricing/) plan ($5/month) is required to send email (and it's recommend to have a smooth experience)
-
-## Deploy
-
-The easiest way to get started is with the **Deploy to Cloudflare** button above. You will need:
-
-- A Cloudflare account.
-- A domain managed by Cloudflare.
-- A Cloudflare API token that Mailflare can use to configure email routing.
-
-After deployment, open your Mailflare URL and follow the first-run setup. The setup checks your Cloudflare configuration, creates the initial account, and helps you connect your first domain.
-
-See the [deployment guide](docs/deployment.md) for required permissions, manual deployment, backups, updates, and custom Worker names.
-
-## Local development
-
-```bash
-cp .dev.vars.example .dev.vars
-npm install
-npm run db:migrate:local
-npm run dev
+```sh
+npm ci
+npm run server:init
+npm run dev:local
+# Separate terminal, using the same environment:
+npm run server:worker
 ```
 
-Add your Cloudflare credentials to `.dev.vars`, then open [http://localhost:3000](http://localhost:3000). For sample local data, run `npm run db:seed` while the development server is running.
+Checks: `npm run typecheck`, `npm run test:server`, `npm run build`.
 
-## Documentation
+## Attribution and license
 
-- [Deployment and configuration](docs/deployment.md)
-- [API and integrations](docs/api.md)
-- [Troubleshooting](docs/troubleshooting.md)
+trtMail is an internal adaptation of Mailflare by Hieu Nguyen. The original [LICENSE](LICENSE), copyright, attribution notices and entitlement checks remain intact. The trtMail name and artwork identify TRT Digital's installation; they do not replace the upstream software license or grant redistribution/SaaS rights.
 
-## License
-
-See [LICENSE](LICENSE).
+Legacy storage identifiers are retained for compatibility with existing databases, sessions and backups. Use the Coolify guide rather than the historical Cloudflare deployment configuration.

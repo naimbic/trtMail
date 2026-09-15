@@ -135,7 +135,7 @@ export function LicenseActivation() {
 						placeholder="Enter your Paymug license key"
 						disabled={action !== null}
 					/>
-					<p className="text-xs text-neutral-500">The key is sent directly to Paymug and is not stored. Mailflare keeps only a one-way hash. Activation binds the key to this installation and URL.</p>
+					<p className="text-xs text-neutral-500">The key is sent directly to Paymug and is not stored. trtMail keeps only a one-way hash. Activation binds the key to this installation and URL.</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-3">
 					{hasActivation ? (

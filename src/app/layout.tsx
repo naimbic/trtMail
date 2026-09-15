@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-	title: "Mailflare",
-	description: "Multi-tenant email on Cloudflare",
+	title: "trtMail",
+	description: "Private email workspace",
 	icons: { icon: "/api/branding/icon" },
 };
 
@@ -25,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 			<head>
 				<link rel="icon" href="/api/branding/icon"></link>
 			</head>
-			<body className={`${geistSans.variable} ${geistMono.variable} antialiased light`}>
+			<body className={`${GeistSans.variable} ${GeistMono.variable} antialiased light`}>
 				<Providers>{children}</Providers>
 			</body>
 		</html>

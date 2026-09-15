@@ -1,24 +1,6 @@
 import type { SetupRequirementCheck } from "./types";
-
-export function getSetupRequirementChecks(env: CloudflareEnv): SetupRequirementCheck[] {
-	const hasApiToken = !!env.CF_TOKEN?.trim();
-	const hasGlobalKey = !!env.CF_API_KEY?.trim() && !!env.CF_EMAIL?.trim();
-
-	return [
-		{
-			key: "Cloudflare API credentials",
-			configured: hasApiToken || hasGlobalKey,
-			message: "Set CF_TOKEN, or set both CF_API_KEY and CF_EMAIL.",
-		},
-		{
-			key: "Email Worker name",
-			configured: !!env.CF_EMAIL_WORKER_NAME?.trim(),
-			message: "Set CF_EMAIL_WORKER_NAME to the deployed Worker name.",
-		},
-		{
-			key: "D1 database",
-			configured: !!env.DB,
-			message: "Deploy the Worker with the DB binding from wrangler.jsonc.",
-		},
-	];
-}
+export function getSetupRequirementChecks(env:CloudflareEnv):SetupRequirementCheck[]{return [
+ {key:"SQLite database",configured:!!env.DB,message:"Mount persistent storage at DATA_DIR."},
+ {key:"Outgoing mail",configured:!!process.env.SMTP_HOST,message:"Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD."},
+ {key:"Incoming mail",configured:!!process.env.IMAP_HOST,message:"Set IMAP_HOST, IMAP_USER and IMAP_PASSWORD."}
+];}

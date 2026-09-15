@@ -13,7 +13,7 @@ const sections = [
 	{
 		href: "/domains",
 		title: "Domains",
-		description: "Add Cloudflare domains and inspect DNS state.",
+		description: "Manage domains connected to your email provider.",
 		icon: Globe2,
 	},
 	{

@@ -67,7 +67,7 @@ export default function HomePage() {
           <div className="flex max-w-2xl flex-col justify-center">
             <div className="mb-6 flex w-fit items-center gap-2 text-sm font-medium text-blue-800">
               <ShieldCheck className="h-4 w-4" />
-              Cloudflare-native email operations
+              Your private email workspace
             </div>
             <h1 className="max-w-[12ch] text-5xl font-semibold leading-[0.96] tracking-tight text-neutral-950 sm:text-6xl lg:text-7xl">
               Mailboxes that feel like your inbox.

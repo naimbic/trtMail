@@ -78,20 +78,7 @@ export async function getDomainDns(
 	env: CloudflareEnv,
 	domain: typeof domains.$inferSelect,
 ): Promise<DomainDnsView> {
-	const routingDns = await getEmailRoutingDns(env, domain.zoneId);
-	const routingSettings = await getEmailRoutingSettings(env, domain.zoneId);
-	let sending: CfDnsRecord[] = [];
-	if (domain.sendingSubdomainTag) {
-		sending = await getSendingSubdomainDns(env, domain.zoneId, domain.sendingSubdomainTag);
-	}
-	return {
-		routing: {
-			records: routingDns.records,
-			missing: routingDns.missing,
-			status: routingSettings.status,
-		},
-		sending,
-	};
+	return {routing:{records:[],missing:[],status:"managed-by-mail-provider"},sending:[]};
 }
 
 export async function removeDomainForUser(
@@ -106,28 +93,6 @@ export async function removeDomainForUser(
 		.where(and(eq(domains.id, domainId), eq(domains.userId, userId)))
 		.limit(1);
 	if (!domain) throw new Error("Domain not found");
-
-	try {
-		await deleteEmailRoutingRulesForDomain(env, domain.zoneId, domain.hostname);
-	} catch (err) {
-		console.warn("deleteEmailRoutingRulesForDomain", err);
-	}
-
-	if (domain.routingEnabled) {
-		try {
-			await disableEmailRouting(env, domain.zoneId);
-		} catch (err) {
-			console.warn("disableEmailRouting", err);
-		}
-	}
-
-	if (domain.sendingSubdomainTag) {
-		try {
-			await deleteSendingSubdomain(env, domain.zoneId, domain.sendingSubdomainTag);
-		} catch (err) {
-			console.warn("deleteSendingSubdomain", err);
-		}
-	}
 
 	await db.delete(domains).where(eq(domains.id, domainId));
 }

@@ -53,3 +53,9 @@ next-env.d.ts
 yarn.lock
 wrangler.prod.jsonc
 mailflare-landing
+
+# Coolify persistent data and private bootstrap files
+.data/
+backups/
+
+!.env.coolify.example

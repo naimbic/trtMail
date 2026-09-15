@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/auth/admin";
 import { requireUser } from "@/lib/auth/cookies";
-import { getEnv } from "@/lib/cloudflare";
+
 import type {
   GitHubContentResponse,
   GitHubRepositoryResponse,
@@ -11,7 +11,7 @@ import type {
   UpdateStatus,
 } from "./types";
 import packageMetadata from "../../../../../package.json";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getEnv } from "@/lib/cloudflare";
 
 const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_API_VERSION = "2026-03-10";
@@ -63,7 +63,7 @@ async function githubRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<{ data?: T; response: Response }> {
-  const { env } = getCloudflareContext();
+  const env = getEnv();
 
   const response = await fetch(`${GITHUB_API_URL}${path}`, {
     cache: "no-store",
@@ -181,7 +181,7 @@ export async function getUpdateStatus(
 }
 
 export async function dispatchUpdateWorkflow() {
-  const { env } = getCloudflareContext();
+  const env = getEnv();
 
   const config = getDispatchConfig(env);
   const repository = config.repository;

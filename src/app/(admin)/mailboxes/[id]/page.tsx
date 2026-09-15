@@ -261,7 +261,7 @@ export default function MailboxSettingsPage() {
         <CardHeader className="py-0">
           <CardTitle className="text-red-700">Danger zone</CardTitle>
           <CardDescription>
-            Deleting this mailbox removes its Cloudflare Email Routing rule, so
+            Deleting this mailbox removes it from this application;
             new mail sent to {address || "this address"} will no longer be
             accepted. Messages already received are kept in the database but
             will no longer appear in any inbox. This cannot be undone.
@@ -335,7 +335,7 @@ export default function MailboxSettingsPage() {
             </p>
             <p className="flex items-center gap-2 text-sm text-neutral-900">
               <Mail className="h-4 w-4 text-neutral-400" />
-              Cloudflare Email Routing
+              Provider-managed email routing
             </p>
           </div>
         </CardContent>
