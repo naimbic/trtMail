@@ -40,12 +40,12 @@ export function NavItem({ link }: { link: NavLink }) {
   if (!Icon) return null;
   const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
   const classes = cn(
-    "flex h-9 items-center gap-3 rounded-r-full text-sm font-medium text-neutral-700 transition-colors hover:bg-blue-50",
-    minimal && "relative mx-auto w-10 justify-center rounded-full px-0",
-    active && "bg-blue-100 text-blue-900",
+    "mail-nav-item flex h-9 items-center gap-3 rounded-r-full text-sm font-medium text-neutral-700 transition-colors hover:bg-blue-50",
+    minimal && "mail-nav-collapsed relative mx-auto w-10 justify-center rounded-full px-0",
+    active && "mail-nav-active bg-blue-100 text-blue-900",
     dragOver && "bg-blue-50 text-blue-900 ring-1 ring-blue-200",
     link.primary &&
-      "mb-3 h-12 w-fit rounded-2xl bg-blue-100 px-5 text-blue-950 shadow-sm hover:bg-blue-200",
+      "mail-compose mb-3 h-12 w-fit rounded-2xl bg-blue-100 px-5 text-blue-950 shadow-sm hover:bg-blue-200",
     link.primary && minimal && "h-11 w-11 rounded-2xl px-0",
   );
   const dropProps = link.onMessageDrop
@@ -73,10 +73,11 @@ export function NavItem({ link }: { link: NavLink }) {
         onClick={openComposer}
         className={classes}
         title={minimal ? link.label : undefined}
+        aria-label={link.label}
         {...dropProps}
       >
         <Icon
-        size={21}
+        size={20}
           style={{ color: link.iconColor }}
         />
         {!minimal && <span className="flex-1">{link.label}</span>}
@@ -139,15 +140,17 @@ export function NavItem({ link }: { link: NavLink }) {
       )}
       <Link
         href={link.href}
+        aria-current={active ? "page" : undefined}
         onClick={navigate}
         title={minimal ? link.label : undefined}
+        aria-label={link.label}
         className={cn(!minimal && "-ml-3 pl-6", classes)}
         {...dropProps}
       >
         <Icon
           // className={minimal ? "h-4 w-4" : "h-5 w-5"}
           style={{ color: link.iconColor }}
-          size={18}
+          size={20}
         />
         {!minimal && <span className="flex-1">{link.label}</span>}
         {!minimal && typeof link.count === "number" && link.count > 0 && (

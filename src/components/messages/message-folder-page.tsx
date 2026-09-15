@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -443,9 +443,7 @@ export function MessageFolderPage({
 					/>
 				))}
 				{!isLoading && messages.length === 0 && (
-					<p className="px-6 py-4 text-sm text-neutral-500">
-						{hasActiveFilters ? "No messages match these filters" : config.emptyText}
-					</p>
+					<section className="flex min-h-[45vh] flex-col items-center justify-center px-6 py-12 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-500"><Inbox size={28} strokeWidth={1.5}/></div><h2 className="text-lg font-semibold text-slate-800">{hasActiveFilters ? "No messages match these filters" : config.emptyText}</h2><p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">{hasActiveFilters ? "Try another search or adjust your filters." : "Messages in this folder will appear here. Start a conversation with your team or a client."}</p></section>
 				)}
 			</div>
 		</div>

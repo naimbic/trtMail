@@ -181,7 +181,7 @@ export function ComposeForm({
 
 		if (draftId) {
 			void authFetch(`/api/drafts/${draftId}`, { method: "DELETE" }).finally(() => {
-				window.dispatchEvent(new Event("mailflare:messages-changed"));
+				window.dispatchEvent(new Event("trtmail:messages-changed"));
 			});
 		}
 		setDraftId(null);
@@ -190,7 +190,7 @@ export function ComposeForm({
 		setText(applyMailboxSignature("", "", selectedMailbox?.signature));
 		setAttachments([]);
 		setToast({ type: "success", message: "Message sent" });
-		window.dispatchEvent(new Event("mailflare:messages-changed"));
+		window.dispatchEvent(new Event("trtmail:messages-changed"));
 	}
 
 	function addAttachments(files: FileList | null) {

@@ -1,7 +1,7 @@
 import type { Branding } from "@/lib/branding/types";
 
 export const DEFAULT_BRANDING: Branding = {
-	appName: "trtMail",
+	appName: "trtDigital Mail",
 	hasCustomIcon: false,
 	canCustomizeBranding: false,
 };

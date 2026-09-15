@@ -3,12 +3,14 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import {
+  CalendarDays,
+  Settings,
   Archive,
   Clock,
   FileText,
   Folder,
   Inbox,
-  MailPlus,
+  SquarePen,
   Plus,
   Send,
   ShieldAlert,
@@ -48,7 +50,7 @@ import { SidebarHeader } from "./sidebar-header";
 import { useSidebar } from "./sidebar-state";
 
 const links = [
-  { href: "/compose", label: "Compose", icon: MailPlus, primary: true },
+  { href: "/compose", label: "Compose", icon: SquarePen, primary: true },
   { href: "/inbox", label: "Inbox", icon: Inbox, preloadMessages: true },
   { href: "/starred", label: "Starred", icon: Star, preloadMessages: true },
   { href: "/snoozed", label: "Snoozed", icon: Clock, preloadMessages: true },
@@ -170,11 +172,11 @@ export function DashboardNav({ className }: { className?: string }) {
   }
 
   return (
-    <nav className={cn("flex min-h-full flex-col gap-1", className)}>
+    <nav data-collapsed={minimal} className={cn("flex min-h-full flex-col gap-1", className)}>
       <SidebarHeader href="/inbox" />
-      {linksWithCounts.map((link, i) => (
-        <NavItem link={link} key={`nav-${link.href || i}`} />
-      ))}
+      <NavItem link={linksWithCounts[0]} />
+      {!minimal && <p className="mail-nav-heading">MAIL</p>}
+      {linksWithCounts.slice(1).map((link) => <NavItem link={link} key={link.href}/>)}
       {!minimal && (
         <div className="mt-2 flex h-8 items-center justify-between px-3">
           <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">
@@ -248,8 +250,8 @@ export function DashboardNav({ className }: { className?: string }) {
         </div>
       )}
       {!minimal && folders.length === 0 && (
-        <div className="mx-3 rounded-lg border border-dashed border-neutral-200 px-3 py-3 text-xs text-neutral-400">
-          No folders yet
+        <div className="mx-3 px-0 py-1 text-xs text-neutral-400">
+          Create folders to organize mail
         </div>
       )}
       {folders.map((folder) => (
@@ -268,6 +270,7 @@ export function DashboardNav({ className }: { className?: string }) {
         />
       ))}
       <span className="flex-1" />
+      <div className="mt-6 space-y-1 border-t border-slate-200 pt-4">{!minimal && <p className="mail-nav-heading">WORKSPACE</p>}<NavItem link={{href:"/calendar",label:"Calendar",icon:CalendarDays}}/><NavItem link={{href:"/settings",label:"Settings",icon:Settings}}/></div>
       <SidebarFooter />
     </nav>
   );

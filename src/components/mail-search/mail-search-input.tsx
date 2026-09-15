@@ -8,7 +8,7 @@ export function MailSearchInput() {
 	const { query, setQuery } = useMailSearch();
 
 	return (
-		<div className="flex h-12 flex-1 items-center gap-3 rounded-full bg-[#eaf1fb] px-4 text-neutral-600">
+		<div className="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-xl bg-slate-100 px-4 text-neutral-600">
 			<Search className="h-5 w-5 shrink-0" />
 			<Input
 				value={query}

@@ -69,7 +69,7 @@ export function ContactDetailsTrigger({
 			setContact(updated);
 			setShownName(nextName);
 			setOpen(false);
-			window.dispatchEvent(new CustomEvent("mailflare:contact-changed", {
+			window.dispatchEvent(new CustomEvent("trtmail:contact-changed", {
 				detail: { email: updated.email, displayName: nextName },
 			}));
 		} catch (saveError) {

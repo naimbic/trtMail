@@ -22,16 +22,11 @@ const sections = [
 		description: "Customize the app name, icon, and favicon.",
 		icon: Palette,
 	},
-	{
-		href: "/licenses",
-		title: "Licenses",
-		description: "Compare Pro and Team perpetual licenses.",
-		icon: BadgeDollarSign,
-	},
+
 	{
 		href: "/accounts",
 		title: "Accounts",
-		description: "Add and manage user accounts with a Team license.",
+		description: "Manage access for your team.",
 		icon: Users,
 	},
 	// {
@@ -58,9 +53,9 @@ export default function AdminSettingsPage() {
 	return (
 		<div>
 			<div className="mb-8">
-				<h1 className="text-3xl font-medium text-neutral-900">Admin settings</h1>
+				<h1 className="text-3xl font-medium text-neutral-900">Workspace overview</h1>
 				<p className="mt-2 text-sm text-neutral-500">
-					Manage workspace-level mail infrastructure and integrations.
+					Manage your team, connected domains, and mail infrastructure in one place.
 				</p>
 			</div>
 			<div className="grid lg:grid-cols-2 gap-4">
@@ -69,7 +64,7 @@ export default function AdminSettingsPage() {
 
 					return (
 						<Link key={section.href} href={section.href}>
-							<Card className="h-full rounded-3xl border-0 bg-white p-6 transition-colors hover:bg-blue-50/60">
+							<Card className="h-full rounded-2xl border border-slate-200 bg-white p-6 transition-colors hover:bg-blue-50/60">
 								<CardHeader className="flex-row items-center gap-4 space-y-0 py-0">
 									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700">
 										<Icon className="h-5 w-5" />

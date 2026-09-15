@@ -11,7 +11,7 @@ async function backup(id:string) {
   // SQLite snapshot for a consistent read across all exported tables.
   db.sqlite.exec('BEGIN');let content:Uint8Array;
   try{content=await exportDatabaseRecords(env.DB);db.sqlite.exec('COMMIT');}catch(e){db.sqlite.exec('ROLLBACK');throw e;}
-  const filename=`mailflare-${new Date().toISOString().replace(/[:.]/g,'-')}.json`,key=`backups/database/${id}/${filename}`;
+  const filename=`trtmail-${new Date().toISOString().replace(/[:.]/g,'-')}.json`,key=`backups/database/${id}/${filename}`;
   const object=await env.BUCKET.put(key,content,{httpMetadata:{contentType:'application/json'}});
   db.sqlite.prepare("UPDATE backups SET status='completed',filename=?,r2_key=?,size=?,completed_at=?,error=NULL WHERE id=?").run(filename,key,object.size,Math.floor(Date.now()/1000),id);
  }catch(error){db.sqlite.prepare("UPDATE backups SET status='failed',error='Backup job failed',completed_at=? WHERE id=?").run(Math.floor(Date.now()/1000),id);throw error;}

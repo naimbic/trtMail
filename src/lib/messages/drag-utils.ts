@@ -1,6 +1,6 @@
 import type { MessageDragPayload } from "./drag-types";
 
-export const MESSAGE_DRAG_MIME = "application/x-mailflare-message-ids";
+export const MESSAGE_DRAG_MIME = "application/x-trtmail-message-ids";
 
 export function setMessageDragData(dataTransfer: DataTransfer, payload: MessageDragPayload): void {
 	dataTransfer.effectAllowed = "move";

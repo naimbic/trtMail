@@ -23,25 +23,8 @@ export default function BrandingPage() {
 	}, [branding.appName]);
 
 	if (!branding.canCustomizeBranding) {
-		return (
-			<div className="space-y-6">
-				<div>
-					<h1 className="text-3xl font-medium text-neutral-900">Branding</h1>
-					<p className="mt-2 text-sm text-neutral-500">Custom branding is available with a Pro or Team license.</p>
-				</div>
-				<Card className="rounded-3xl border-0 bg-white p-6">
-					<CardHeader className="py-0">
-						<CardTitle className="flex items-center gap-2"><LockKeyhole className="h-5 w-5" />License required</CardTitle>
-						<CardDescription>This installation uses the trtMail name, app icon, and favicon. Additional customization follows the underlying software license.</CardDescription>
-					</CardHeader>
-					<CardContent className="flex flex-col gap-3 pt-6 sm:flex-row">
-						<Button asChild><a href="https://app.paymug.co/buy/mailflare-pro" target="_blank" rel="noopener noreferrer">Buy Pro · $19 <ExternalLink className="h-4 w-4" /></a></Button>
-						<Button asChild variant="outline"><a href="https://app.paymug.co/buy/mailflare-team" target="_blank" rel="noopener noreferrer">Buy Team · from $249 <ExternalLink className="h-4 w-4" /></a></Button>
-					</CardContent>
-				</Card>
-			</div>
-		);
-	}
+ return <div className="space-y-6"><div><p className="mail-eyebrow">WORKSPACE IDENTITY</p><h1 className="text-3xl font-semibold">trtDigital Mail</h1><p className="mt-3 text-sm text-slate-500">Your team's mail workspace, by TRT Digital.</p></div><Card className="rounded-2xl bg-white p-8"><div className="flex items-center gap-5"><div><h2 className="text-xl font-semibold">{branding.appName}</h2><p className="mt-1 text-sm text-slate-500">Identity managed by your workspace administrator.</p></div></div></Card></div>;
+ }
 
 	function pickIcon(file: File | null) {
 		setIcon(file);

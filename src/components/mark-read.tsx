@@ -7,7 +7,7 @@ export function MarkAsRead({ messageId }: { messageId: string }) {
 	useEffect(() => {
 		authFetch(`/api/messages/${messageId}/read`, { method: "POST" })
 			.then((response) => {
-				if (response.ok) window.dispatchEvent(new Event("mailflare:messages-changed"));
+				if (response.ok) window.dispatchEvent(new Event("trtmail:messages-changed"));
 			})
 			.catch(() => {
 				// silently fail

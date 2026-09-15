@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIsFetching } from "@tanstack/react-query";
+import { BrandName } from "@/components/brand-name";
 import { useBranding } from "@/components/branding-provider";
 import { PageLoadingContext } from "@/components/page-loading";
 import type { LoadingTransitionProps } from "./loading-transition-types";
@@ -16,7 +17,6 @@ export function LoadingTransition({ children, ready }: LoadingTransitionProps) {
 	const [progress, setProgress] = useState(8);
 	const [loaderVisible, setLoaderVisible] = useState(true);
 	const [contentVisible, setContentVisible] = useState(false);
-	const [iconUrl, setIconUrl] = useState(branding.iconUrl);
 	const [pageMounted, setPageMounted] = useState(false);
 	const [pendingLoads, setPendingLoads] = useState(0);
 	const [dataWaitExpired, setDataWaitExpired] = useState(false);
@@ -31,9 +31,7 @@ export function LoadingTransition({ children, ready }: LoadingTransitionProps) {
 	const loadingContext = useMemo(() => ({ reportLoading }), [reportLoading]);
 	const canComplete = ready && pageMounted && (dataWaitExpired || (pendingLoads === 0 && fetchingQueries === 0));
 
-	useEffect(() => {
-		setIconUrl(branding.iconUrl);
-	}, [branding.iconUrl]);
+
 
 	useEffect(() => {
 		if (canComplete) return;
@@ -87,12 +85,7 @@ export function LoadingTransition({ children, ready }: LoadingTransitionProps) {
 					}`}
 				>
 					<div className="flex w-64 flex-col items-center gap-6">
-						<img
-							src={iconUrl}
-							onError={() => setIconUrl("/trtmail-icon.svg")}
-							alt={`${branding.appName} icon`}
-							className="h-20 w-20 rounded-2xl object-contain"
-						/>
+<BrandName name={branding.appName} />
 						<div className="w-full">
 							<div className="h-1.5 overflow-hidden rounded-full bg-blue-100">
 								<div

@@ -1,0 +1,45 @@
+{
+  "baseCommit": "928080a3c17cc3942b435f168b866375c71a313d",
+  "commits": [
+    {
+      "hash": "928080a3c17cc3942b435f168b866375c71a313d",
+      "date": "2026-09-15T20:24:56+01:00",
+      "subject": "Adapt trtMail for Coolify and apply TRT Digital branding"
+    },
+    {
+      "hash": "d74d2ceee819477c89b417c6e2a92f081b2a8cdc",
+      "date": "2026-09-02T02:27:56+07:00",
+      "subject": "Update package.json"
+    },
+    {
+      "hash": "ad2aa6689ac865f78ba53e83213a7e919fe9821f",
+      "date": "2026-09-02T02:23:24+07:00",
+      "subject": "Update open-next.config.ts"
+    },
+    {
+      "hash": "2e70c0a94aea55e09aaa3e80e1cbd3e732ad841e",
+      "date": "2026-09-02T02:12:23+07:00",
+      "subject": "Update package.json"
+    },
+    {
+      "hash": "d5a08b0140cb45e66850544b99415460e50bc5f5",
+      "date": "2026-09-02T02:05:22+07:00",
+      "subject": "added migration to build script"
+    },
+    {
+      "hash": "ced564c3d931632e38903354299b1db0841126db",
+      "date": "2026-09-02T01:55:17+07:00",
+      "subject": "Revert \"update build script\""
+    },
+    {
+      "hash": "2bd13b275ede747dfd7c78838fc89aeaed9ed141",
+      "date": "2026-09-02T01:20:26+07:00",
+      "subject": "update build script"
+    },
+    {
+      "hash": "9db2c29b9ae9e4e9ffab58df3e53b2f10c61ff09",
+      "date": "2026-09-02T01:13:48+07:00",
+      "subject": "Merge pull request #21 from rome-xi/contrib/mailflare-19"
+    }
+  ]
+}

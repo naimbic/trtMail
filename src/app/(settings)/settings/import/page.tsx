@@ -106,7 +106,7 @@ export default function SettingsImportPage() {
 			(percentage) => setFileProgress({ completed: percentage, total: 100, label: percentage < 70 ? "Uploading files" : "Importing messages" }),
       );
       setFileResult(result);
-      window.dispatchEvent(new Event("mailflare:messages-changed"));
+      window.dispatchEvent(new Event("trtmail:messages-changed"));
     } catch (error) {
       setFileError(
         error instanceof Error ? error.message : "File import failed",
@@ -155,7 +155,7 @@ export default function SettingsImportPage() {
       }
       setImapResult(total);
       setImapForm((current) => ({ ...current, password: "" }));
-      window.dispatchEvent(new Event("mailflare:messages-changed"));
+      window.dispatchEvent(new Event("trtmail:messages-changed"));
     } catch (error) {
       setImapError(
         error instanceof Error ? error.message : "IMAP import failed",
@@ -225,7 +225,7 @@ export default function SettingsImportPage() {
           </div>
           {/* <p className="text-xs leading-5 text-neutral-500">
             Select Folders to import every source IMAP folder into matching
-            trtMail folders.
+            trtDigital Mail folders.
           </p> */}
         </div>
         {/* </CardContent>
@@ -380,7 +380,7 @@ export default function SettingsImportPage() {
                 <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs leading-5 text-neutral-500">
                   IMAP imports selected source sections automatically. Folders
                   are discovered from the source account and imported into
-                  matching new or existing trtMail folders.
+                  matching new or existing trtDigital Mail folders.
                 </p>
                 <Button
                   type="submit"

@@ -38,10 +38,10 @@ const sections = [
     ],
   },
   {
-    label: "Product",
+    label: "Workspace",
     links: [
       { href: "/branding", label: "Branding", icon: Palette },
-      { href: "/licenses", label: "Licenses", icon: BadgeDollarSign },
+
       // { href: "/api-keys", label: "API Keys", icon: KeyRound },
       // { href: "/webhooks", label: "Webhooks", icon: Webhook }
     ],
@@ -53,7 +53,7 @@ export function AdminNav({ className }: { className?: string }) {
   const { minimal } = useSidebar();
 
   return (
-    <nav className={cn("flex min-h-full flex-col gap-1", className)}>
+    <nav data-collapsed={minimal} className={cn("flex min-h-full flex-col gap-1", className)}>
       <SidebarHeader href="/inbox" label="Admin" />
       <div className={cn("space-y-4", minimal && "space-y-2")}>
         {sections.map((section) => {

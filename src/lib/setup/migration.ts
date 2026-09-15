@@ -71,8 +71,8 @@ INSERT OR IGNORE INTO backup_settings (id, enabled, schedule_type, retention_ena
 CREATE TABLE IF NOT EXISTS backups (id text PRIMARY KEY NOT NULL, status text DEFAULT 'queued' NOT NULL, trigger text NOT NULL, r2_key text, filename text, size integer, error text, created_by_user_id text REFERENCES users(id) ON DELETE set null, created_at integer NOT NULL, started_at integer, completed_at integer);
 CREATE INDEX IF NOT EXISTS backups_created_idx ON backups(created_at);
 CREATE INDEX IF NOT EXISTS backups_status_idx ON backups(status);
-CREATE TABLE IF NOT EXISTS app_settings (id text PRIMARY KEY NOT NULL, app_name text DEFAULT 'trtMail' NOT NULL, icon_key text, updated_at integer NOT NULL);
-INSERT OR IGNORE INTO app_settings (id, app_name, updated_at) VALUES ('default', 'trtMail', unixepoch());
+CREATE TABLE IF NOT EXISTS app_settings (id text PRIMARY KEY NOT NULL, app_name text DEFAULT 'trtDigital Mail' NOT NULL, icon_key text, updated_at integer NOT NULL);
+INSERT OR IGNORE INTO app_settings (id, app_name, updated_at) VALUES ('default', 'trtDigital Mail', unixepoch());
 CREATE TABLE IF NOT EXISTS license_settings (id text PRIMARY KEY NOT NULL, instance_id text NOT NULL, instance_url text, license_key_hash text, plan text DEFAULT 'community' NOT NULL, state text DEFAULT 'inactive' NOT NULL, features text DEFAULT '[]' NOT NULL, activated_at integer, validated_at integer, updated_at integer NOT NULL);
 CREATE UNIQUE INDEX IF NOT EXISTS license_settings_instance_id_unique ON license_settings(instance_id);
 CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);
@@ -86,7 +86,7 @@ export async function migrateCleanDatabase(db: D1Database): Promise<boolean> {
 		const tableNames = new Set(existing.results.map((table) => table.name));
 		if (tableNames.has("users") && tableNames.has("domains")) return false;
 		throw new Error(
-			"The D1 database is not empty, but the trtMail schema is incomplete. Apply the committed D1 migrations before continuing setup.",
+			"The D1 database is not empty, but the trtDigital Mail schema is incomplete. Apply the committed D1 migrations before continuing setup.",
 		);
 	}
 

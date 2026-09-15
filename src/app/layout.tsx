@@ -5,7 +5,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-	title: "trtMail",
+	title: "trtDigital Mail",
 	description: "Private email workspace",
 	icons: { icon: "/api/branding/icon" },
 };

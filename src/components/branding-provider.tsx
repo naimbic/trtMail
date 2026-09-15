@@ -14,7 +14,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 		const nextBranding = await fetchBranding();
 		setBranding(nextBranding);
 		setIconVersion(Date.now());
-		if (document.title === "trtMail" || document.title === branding.appName) {
+		if (document.title === "trtDigital Mail" || document.title === branding.appName) {
 			document.title = nextBranding.appName;
 		}
 	}

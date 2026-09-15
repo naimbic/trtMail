@@ -43,7 +43,7 @@ export async function runSingleMessageAction(
     throw new Error("Unable to update message");
   }
 
-  window.dispatchEvent(new Event("mailflare:messages-changed"));
+  window.dispatchEvent(new Event("trtmail:messages-changed"));
 }
 
 export function openUnsubscribeUrl(url: string) {

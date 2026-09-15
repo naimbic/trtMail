@@ -46,7 +46,7 @@ export function LoginClient() {
     <AuthShell
       icon={Mail}
       title="Sign in"
-      description="Open your mailbox and continue from the same inbox workspace."
+      description="Welcome back. Sign in to your TRT Digital workspace."
     >
       <form method="post" onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-2">

@@ -7,7 +7,7 @@ import type {
 } from "./client-types";
 
 const SESSION_STORAGE_KEY = "mailflare-session-token";
-export const AUTH_SESSION_CHANGED_EVENT = "mailflare:auth-session-changed";
+export const AUTH_SESSION_CHANGED_EVENT = "trtmail:auth-session-changed";
 
 function dispatchAuthSessionChanged(authenticated: boolean): void {
 	if (typeof window === "undefined") return;
