@@ -170,10 +170,9 @@ export function MailboxSelector() {
 	const selectedMailboxAvatarUrl = selectedMailbox
 		? mailboxAvatarUrls[selectedMailbox.id]
 		: undefined;
-	const selectedHasAvatar = selectedMailbox
-		? !!selectedMailbox.hasAvatar || !!selectedMailboxAvatarUrl
-		: hasAvatar;
-	const selectedAvatarUrl = selectedMailbox
+	const useMailboxAvatar = !!selectedMailbox && (!!selectedMailbox.hasAvatar || !!selectedMailboxAvatarUrl);
+	const selectedHasAvatar = useMailboxAvatar || hasAvatar;
+	const selectedAvatarUrl = useMailboxAvatar && selectedMailbox
 		? selectedMailboxAvatarUrl ?? `/api/mailboxes/${selectedMailbox.id}/avatar`
 		: avatarUrl;
 	const otherMailboxes = mailboxes.filter((mailbox) => mailbox.id !== selectedMailbox?.id);
@@ -200,7 +199,7 @@ export function MailboxSelector() {
 					hasAvatar={selectedHasAvatar}
 					avatarUrl={selectedAvatarUrl}
 					onAvatarError={() => {
-						if (!selectedMailbox) setHasAvatar(false);
+						if (!useMailboxAvatar) setHasAvatar(false);
 					}}
 				/>
 			</button>
@@ -215,7 +214,7 @@ export function MailboxSelector() {
 								avatarUrl={selectedAvatarUrl}
 								size="large"
 								onAvatarError={() => {
-									if (!selectedMailbox) setHasAvatar(false);
+									if (!useMailboxAvatar) setHasAvatar(false);
 								}}
 							/>
 							<div className="min-w-0 flex-1">
