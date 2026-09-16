@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { updateManagedAccountSchema } from "@/lib/validators";
+import { canAssignRole } from "@/lib/auth/roles";
 import { requireTeamAdmin } from "../utils";
 import { getLicenseEntitlements } from "@/lib/licenses/service";
 import type { AccountRouteParams } from "./types";
@@ -40,8 +41,14 @@ export async function PATCH(request: Request, { params }: AccountRouteParams) {
 	if (!account || (account.id !== access.user!.id && account.createdByUserId !== access.user!.id)) {
 		return NextResponse.json({ error: "Account not found" }, { status: 404 });
 	}
+	if (account.role === "super_admin") {
+		return NextResponse.json({ error: "This account cannot be modified" }, { status: 403 });
+	}
 	const parsed = updateManagedAccountSchema.safeParse(await request.json());
 	if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+	if (!canAssignRole(access.user!, parsed.data.role)) {
+		return NextResponse.json({ error: "You cannot assign that role" }, { status: 403 });
+	}
 	const canForwardEmail = (await getLicenseEntitlements(access.env)).canForwardEmail;
 	if (!canForwardEmail && parsed.data.forwardingEmail && parsed.data.forwardingEmail !== account.forwardingEmail) {
 		return NextResponse.json({ error: "A Pro or Team license is required for email forwarding" }, { status: 403 });

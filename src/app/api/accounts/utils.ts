@@ -2,7 +2,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { getDb } from "@/db";
 import { domains, mailboxes, users } from "@/db/schema";
-import { assertAdmin } from "@/lib/auth/admin";
+import { assertCan } from "@/lib/auth/roles";
+import type { UserRole } from "@/lib/auth/types";
 import { requireUser } from "@/lib/auth/cookies";
 import { getLicenseEntitlements } from "@/lib/licenses/service";
 import { getEnv } from "@/lib/cloudflare";
@@ -49,7 +50,7 @@ export function accountListItemFromUser(user: {
 	email: string;
 	name: string;
 	resetEmail: string | null;
-	role: "admin" | "user";
+	role: UserRole;
 	disabled: boolean;
 	avatarKey?: string | null;
 	canManageMailboxes?: boolean;
@@ -72,7 +73,7 @@ export async function requireTeamAdmin(request: Request) {
 	const env = getEnv();
 	try {
 		const user = await requireUser(env, request);
-		assertAdmin(user);
+		assertCan(user, "manageUsers");
 		if (!(await getLicenseEntitlements(env)).canManageAccounts) {
 			return {
 				env,

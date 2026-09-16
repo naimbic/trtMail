@@ -68,7 +68,7 @@ export const mailboxSchema = z.object({
 
 export const updateManagedAccountSchema = z.object({
 	name: z.string().trim().min(1).max(100),
-	role: z.enum(["admin", "user"]),
+	role: z.enum(["admin", "manager", "user"]),
 	disabled: z.boolean(),
 	canManageMailboxes: z.boolean(),
 	forwardingEmail: z.preprocess(
@@ -92,7 +92,7 @@ export const createUserAccountSchema = z.object({
 	username: z.string().trim().min(1).max(64).regex(/^[a-zA-Z0-9._%+-]+$/),
 	domainId: z.string().min(1),
 	password: z.string().min(8).max(128),
-	role: z.enum(["admin", "user"]).default("user"),
+	role: z.enum(["admin", "manager", "user"]).default("user"),
 });
 
 export const updateAccountSchema = z.object({

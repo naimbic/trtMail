@@ -5,6 +5,7 @@ import { mailboxes, users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { newId } from "@/lib/ids";
 import { createUserAccountSchema } from "@/lib/validators";
+import { canAssignRole } from "@/lib/auth/roles";
 import { ensureEmailRoutingRuleToWorker } from "@/lib/cloudflare-api";
 import { ensureMailboxDomainRouting } from "@/lib/mailboxes/domain-addresses";
 import type { CreateUserAccountInput } from "./types";
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
 	}
 
 	const input: CreateUserAccountInput = parsed.data;
+	if (!canAssignRole(access.user!, input.role)) {
+		return NextResponse.json({ error: "You cannot assign that role" }, { status: 403 });
+	}
 	const db = getDb(access.env);
 	const domain = await getDomainForAdmin(db, access.user!.id, input.domainId);
 	if (!domain) return NextResponse.json({ error: "Domain not found" }, { status: 404 });
