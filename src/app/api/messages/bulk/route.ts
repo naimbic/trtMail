@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/cookies";
 import { getEnv } from "@/lib/cloudflare";
 import { getMailboxAccessLevel } from "@/lib/mailboxes/access";
 import { createAuditLog } from "@/lib/mailboxes/audit";
+import { permanentlyDeleteMessages } from "@/lib/messages/delete";
 import type { BulkMessagePayload } from "./types";
 import {
 	getReadValueForBulkAction,
@@ -30,6 +31,31 @@ export async function POST(request: Request) {
 	const read = getReadValueForBulkAction(payload.action);
 	const db = getDb(env);
 	let folderId: string | null | undefined;
+
+	// Permanent delete — hard-remove the selected messages (+ their R2 blobs).
+	if (payload.action === "delete") {
+		const selected = await db.select().from(messages).where(inArray(messages.id, messageIds));
+		const deletableIds: string[] = [];
+		for (const message of selected) {
+			if (!message.mailboxId) {
+				deletableIds.push(message.id);
+				continue;
+			}
+			const access = await getMailboxAccessLevel(db, user, message.mailboxId);
+			if (access?.canManage) deletableIds.push(message.id);
+		}
+		if (deletableIds.length === 0) {
+			return NextResponse.json({ error: "No accessible messages" }, { status: 404 });
+		}
+		// Log before deleting (message FK is set null on delete).
+		await Promise.all(
+			deletableIds.map((messageId) =>
+				createAuditLog(env, { actorUserId: user.id, messageId, action: "email.permanent_delete" }).catch(() => {}),
+			),
+		);
+		const count = await permanentlyDeleteMessages(env, db, deletableIds);
+		return NextResponse.json({ ok: true, deleted: count });
+	}
 
 	if (payload.action === "folder") {
 		if (!payload.folderId) {

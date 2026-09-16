@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, Inbox } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Inbox, Trash2, Clock, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/auth/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCompose } from "@/components/compose/compose-context";
@@ -36,6 +37,7 @@ const pageSize = 25;
 function MessageListRow({
 	message,
 	config,
+	reminder,
 	selected,
 	active = false,
 	compact = false,
@@ -52,6 +54,26 @@ function MessageListRow({
 	useEffect(() => setStarred(message.starred), [message.starred]);
 	const rowMessage = { ...message, read, starred };
 	const unread = rowMessage.direction === "inbound" && !rowMessage.read;
+
+	// Status dot for a reminder/snooze attached to this message:
+	// green = done, red = past due, blue = upcoming.
+	const statusDot = (() => {
+		const now = Date.now();
+		if (reminder && reminder.status !== "cancelled") {
+			const color =
+				reminder.status === "done"
+					? "text-emerald-500"
+					: reminder.dueAt < now
+						? "text-red-500"
+						: "text-blue-500";
+			return { Icon: BellRing, color, title: `Reminder (${reminder.status})` };
+		}
+		if (message.snoozedUntil) {
+			const at = new Date(message.snoozedUntil).getTime();
+			return { Icon: Clock, color: at < now ? "text-red-500" : "text-blue-500", title: "Snoozed" };
+		}
+		return null;
+	})();
 	const draggable = config.folder === "inbox" && message.direction === "inbound";
 	const party = getMessageParty(rowMessage, config.folder, currentAccountName);
 	const preview = getMessagePreview(rowMessage, config.folder);
@@ -195,6 +217,7 @@ function MessageListRow({
 				className="h-4 w-4 rounded border-neutral-300"
 				aria-label="Select message"
 			/>
+			{statusDot && <statusDot.Icon className={`h-3.5 w-3.5 shrink-0 ${statusDot.color}`} aria-label={statusDot.title} />}
 			<Link href={href} onClick={onMessageNavigate} className="contents">
 				{content}
 			</Link>
@@ -236,6 +259,55 @@ export function MessageFolderPage({
 		Array<{ id: string; read: boolean }>
 	>([]);
 	const [pendingBulkAction, setPendingBulkAction] = useState(false);
+	const [emptyingTrash, setEmptyingTrash] = useState(false);
+
+	// In Trash, "delete" means permanent removal — map the trash action accordingly.
+	const resolveAction = (action: BulkMessageAction): BulkMessageAction =>
+		config.folder === "trash" && action === "trash" ? "delete" : action;
+
+	async function emptyTrash() {
+		if (!window.confirm("Permanently delete all messages in Trash? This cannot be undone.")) return;
+		setEmptyingTrash(true);
+		try {
+			const res = await authFetch("/api/messages/empty-trash", { method: "POST" });
+			if (res.ok) window.dispatchEvent(new Event("trtmail:messages-changed"));
+		} finally {
+			setEmptyingTrash(false);
+		}
+	}
+
+	// Reminders linked to messages → colored status dot on the row.
+	const [reminderMap, setReminderMap] = useState<Map<string, { status: string; dueAt: number }>>(new Map());
+	useEffect(() => {
+		let cancelled = false;
+		const loadReminders = async () => {
+			try {
+				const res = await authFetch("/api/reminders?filter=all");
+				const data = (await res.json()) as { reminders?: Array<{ messageId: string | null; status: string; dueAt: string | number }> };
+				if (cancelled) return;
+				const map = new Map<string, { status: string; dueAt: number }>();
+				for (const r of data.reminders ?? []) {
+					if (!r.messageId) continue;
+					const dueAt = new Date(r.dueAt).getTime();
+					const existing = map.get(r.messageId);
+					// Prefer an open reminder over a completed one for the dot.
+					if (!existing || (existing.status === "done" && r.status !== "done")) {
+						map.set(r.messageId, { status: r.status, dueAt });
+					}
+				}
+				setReminderMap(map);
+			} catch {
+				/* dot is optional */
+			}
+		};
+		void loadReminders();
+		const handler = () => void loadReminders();
+		window.addEventListener("trtmail:messages-changed", handler);
+		return () => {
+			cancelled = true;
+			window.removeEventListener("trtmail:messages-changed", handler);
+		};
+	}, []);
 	const [unreadOnly, setUnreadOnly] = useState(false);
 	const { messages, isLoading, total, limit, updateMessages } = useMessages(config.folder, selectedMailbox?.id, {
 		query,
@@ -330,7 +402,7 @@ export function MessageFolderPage({
 			if (inboxUnreadDelta) dispatchMessageCountsDelta({ inboxUnreadDelta });
 		}
 		try {
-			await runBulkMessageAction(selectedIds, action);
+			await runBulkMessageAction(selectedIds, resolveAction(action));
 			setSelectedMessages([]);
 		} catch (error) {
 			if (readValue !== null) {
@@ -367,6 +439,19 @@ export function MessageFolderPage({
 							onClearSelection={() => setSelectedMessages([])}
 							pending={pendingBulkAction}
 						/>
+					) : config.folder === "trash" && !compact && messages.length > 0 ? (
+						<div className="flex w-full items-center justify-end">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={emptyTrash}
+								disabled={emptyingTrash}
+								className="text-red-600 hover:bg-red-50 hover:text-red-700"
+							>
+								<Trash2 className="mr-1.5 h-4 w-4" />
+								{emptyingTrash ? "Emptying…" : "Empty trash"}
+							</Button>
+						</div>
 					) : (
 						compact && (
 							<>
@@ -433,12 +518,13 @@ export function MessageFolderPage({
 						key={message.id}
 						message={message}
 						config={config}
+						reminder={reminderMap.get(message.id)}
 						selected={selectedIds.includes(message.id)}
 						active={message.id === selectedMessageId}
 						compact={compact}
 						currentAccountName={currentAccountName}
 						onSelectedChange={updateSelectedMessage}
-						onMessageAction={(messageId, action) => runBulkMessageAction([messageId], action, action !== "read" && action !== "unread")}
+						onMessageAction={(messageId, action) => runBulkMessageAction([messageId], resolveAction(action), action !== "read" && action !== "unread")}
 						dragMessageIds={selectedIds.includes(message.id) ? selectedIds : [message.id]}
 					/>
 				))}
