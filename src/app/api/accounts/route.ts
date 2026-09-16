@@ -6,6 +6,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { newId } from "@/lib/ids";
 import { createUserAccountSchema } from "@/lib/validators";
 import { canAssignRole } from "@/lib/auth/roles";
+import { createAuditLog } from "@/lib/mailboxes/audit";
 import { ensureEmailRoutingRuleToWorker } from "@/lib/cloudflare-api";
 import { ensureMailboxDomainRouting } from "@/lib/mailboxes/domain-addresses";
 import type { CreateUserAccountInput } from "./types";
@@ -80,6 +81,14 @@ export async function POST(request: Request) {
 			displayName: username,
 		});
 		await ensureMailboxDomainRouting(access.env, db, { id: mailboxId, domainId: domain.id, localPart: username, useAllDomains: true });
+
+		await createAuditLog(access.env, {
+			actorUserId: access.user!.id,
+			targetUserId: userId,
+			mailboxId,
+			action: "account.create",
+			metadata: { email, role: input.role },
+		}).catch(() => {});
 
 		return NextResponse.json({ account: accountListItemFromUser(account) }, { status: 201 });
 	} catch (error) {

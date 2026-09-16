@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { updateManagedAccountSchema } from "@/lib/validators";
 import { canAssignRole } from "@/lib/auth/roles";
+import { createAuditLog } from "@/lib/mailboxes/audit";
 import { requireTeamAdmin } from "../utils";
 import { getLicenseEntitlements } from "@/lib/licenses/service";
 import type { AccountRouteParams } from "./types";
@@ -60,5 +61,11 @@ export async function PATCH(request: Request, { params }: AccountRouteParams) {
 		canManageMailboxes: parsed.data.canManageMailboxes,
 		...(parsed.data.forwardingEmail !== undefined ? { forwardingEmail: parsed.data.forwardingEmail } : {}),
 	}).where(eq(users.id, id));
+	await createAuditLog(access.env, {
+		actorUserId: access.user!.id,
+		targetUserId: id,
+		action: "account.update",
+		metadata: { role: parsed.data.role, disabled: parsed.data.disabled },
+	}).catch(() => {});
 	return NextResponse.json({ ok: true });
 }
