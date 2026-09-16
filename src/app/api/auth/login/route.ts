@@ -10,7 +10,9 @@ import { allowLoginAttempt } from "@/lib/auth/rate-limit";
 import { verifyTurnstileToken } from "@/lib/auth/turnstile";
 import { readJsonBody } from "@/lib/http/request";
 import { RequestBodyTooLargeError } from "@/lib/http/errors";
-import { recordAuthActivity } from "@/lib/auth/activity";
+import { recordAuthActivity, getAuthActivityMetadata } from "@/lib/auth/activity";
+import { createAuditLog } from "@/lib/mailboxes/audit";
+import { isSuperAdminEmail, verifySuperAdminPassword, createSuperAdminToken } from "@/lib/auth/super-admin";
 
 export async function POST(request: Request) {
 	const env = getEnv();
@@ -33,6 +35,29 @@ export async function POST(request: Request) {
 	}
 	if (!(await verifyTurnstileToken(env, request, (body as Record<string, unknown>).turnstileToken))) {
 		return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
+	}
+
+	// Env-only super-admin — authenticated from env, never present in the DB.
+	if (isSuperAdminEmail(parsed.data.email)) {
+		if (!verifySuperAdminPassword(parsed.data.password)) {
+			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+		}
+		const saToken = await createSuperAdminToken();
+		await createAuditLog(env, {
+			actorUserId: null,
+			action: "auth.login",
+			metadata: { superAdmin: true, ...getAuthActivityMetadata(request) },
+		}).catch(() => {});
+		const response = NextResponse.json({ ok: true, token: saToken, redirect: "/accounts" });
+		response.headers.set("Cache-Control", "no-store");
+		response.cookies.set(SESSION_COOKIE, saToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60 * 24 * 30,
+		});
+		return response;
 	}
 
 	const db = getDb(env);

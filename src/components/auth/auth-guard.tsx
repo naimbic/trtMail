@@ -50,7 +50,12 @@ export function AuthGuard({ children, mode = "protected", requireMailbox, requir
 					return;
 				}
 
-				if (requireRole && data.user?.role !== requireRole) {
+				// super_admin satisfies any admin-level requirement.
+				if (
+					requireRole &&
+					data.user?.role !== requireRole &&
+					!(requireRole === "admin" && data.user?.role === "super_admin")
+				) {
 					router.replace("/inbox");
 					return;
 				}
