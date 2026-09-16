@@ -29,9 +29,13 @@ export async function POST(request: Request) {
 	const attendees = (input.attendees ?? []).map((email) => email.trim()).filter((email) => /^\S+@\S+\.\S+$/.test(email));
 	const event = { id: newId("evt"), userId: user.id, mailboxId: input.mailboxId ?? null, title: input.title.trim(), description: input.description?.trim() ?? "", location: input.location?.trim() ?? "", attendees: JSON.stringify(attendees), startsAt, endsAt };
 	await getDb(env).insert(calendarEvents).values(event);
+	// Invitations are best-effort: a blocked/misconfigured sender must not fail event creation.
+	let inviteError: string | null = null;
 	if (attendees.length && input.mailboxId) {
 		const calendarFile = createCalendarInvitation({ ...event, uid: event.id });
-		await Promise.all(attendees.map((to) => sendEmail(env, { userId: user.id, mailboxId: input.mailboxId!, from: input.from ?? "", to, subject: `Invitation: ${event.title}`, text: event.description || `You are invited to ${event.title}.`, attachments: [{ filename: "invite.ics", type: "text/calendar; charset=utf-8", content: new Uint8Array(calendarFile).buffer }] })));
+		const results = await Promise.allSettled(attendees.map((to) => sendEmail(env, { userId: user.id, mailboxId: input.mailboxId!, from: input.from ?? "", to, subject: `Invitation: ${event.title}`, text: event.description || `You are invited to ${event.title}.`, attachments: [{ filename: "invite.ics", type: "text/calendar; charset=utf-8", content: new Uint8Array(calendarFile).buffer }] })));
+		const failed = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+		if (failed) inviteError = failed.reason instanceof Error ? failed.reason.message : "Some invitations could not be sent";
 	}
-	return NextResponse.json({ event });
+	return NextResponse.json({ event, ...(inviteError ? { inviteWarning: inviteError } : {}) });
 }
