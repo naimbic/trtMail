@@ -6,12 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { authFetch } from "@/lib/auth/client";
 import { formatEmailAddress, getEmailAddress } from "@/lib/email/address";
 import { cn } from "@/lib/utils";
 import { applyMailboxSignature, buildSendFormData, fetchDraft, formatAttachmentSize } from "./utils";
+import { RichEditor } from "./rich-editor";
+
+function textToHtml(text: string): string {
+	if (!text) return "";
+	const escaped = text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;");
+	return escaped.replace(/\n/g, "<br>");
+}
 import type { ComposeAttachment } from "./types";
 
 type Toast = { type: "success" | "error"; message: string } | null;
@@ -30,6 +39,7 @@ export function ComposeForm({
 	const [to, setTo] = useState("");
 	const [subject, setSubject] = useState("");
 	const [text, setText] = useState("");
+	const [html, setHtml] = useState("");
 	const [attachments, setAttachments] = useState<ComposeAttachment[]>([]);
 	const [toast, setToast] = useState<Toast>(null);
 	const [loading, setLoading] = useState(false);
@@ -168,6 +178,7 @@ export function ComposeForm({
 				to,
 				subject,
 				text,
+				html,
 				mailboxId: selectedMailbox?.id,
 			}),
 		});
@@ -301,12 +312,14 @@ export function ComposeForm({
 				</div>
 				<div className="min-h-0 flex-1 px-4 py-2">
 					<Label htmlFor={`${mode}-text`} className="sr-only">Body</Label>
-					<Textarea
-						id={`${mode}-text`}
-						value={text}
-						onChange={(event) => setText(event.target.value)}
+					<RichEditor
+						seed={textToHtml(text)}
 						disabled={loadingDraft}
-						className="h-full min-h-full resize-none border-0 px-0 shadow-none focus-visible:ring-0"
+						onChange={(nextHtml, nextText) => {
+							setHtml(nextHtml);
+							setText(nextText);
+						}}
+						className="min-h-full"
 					/>
 				</div>
 				{attachments.length > 0 && (

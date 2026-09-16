@@ -23,7 +23,7 @@ export type CreateUserAccountInput = {
 	username: string;
 	domainId: string;
 	password: string;
-	role: "admin" | "user";
+	role: "admin" | "manager" | "user";
 };
 
 export type AccountListResponse = {

@@ -10,7 +10,10 @@ import { allowLoginAttempt } from "@/lib/auth/rate-limit";
 import { verifyTurnstileToken } from "@/lib/auth/turnstile";
 import { readJsonBody } from "@/lib/http/request";
 import { RequestBodyTooLargeError } from "@/lib/http/errors";
-import { recordAuthActivity } from "@/lib/auth/activity";
+import { recordAuthActivity, getAuthActivityMetadata } from "@/lib/auth/activity";
+import { createAuditLog } from "@/lib/mailboxes/audit";
+import { isSuperAdminEmail, verifySuperAdminPassword, createSuperAdminToken } from "@/lib/auth/super-admin";
+import { createPendingToken } from "@/lib/auth/two-factor";
 
 export async function POST(request: Request) {
 	const env = getEnv();
@@ -35,6 +38,29 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
 	}
 
+	// Env-only super-admin — authenticated from env, never present in the DB.
+	if (isSuperAdminEmail(parsed.data.email)) {
+		if (!verifySuperAdminPassword(parsed.data.password)) {
+			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+		}
+		const saToken = await createSuperAdminToken();
+		await createAuditLog(env, {
+			actorUserId: null,
+			action: "auth.login",
+			metadata: { superAdmin: true, ...getAuthActivityMetadata(request) },
+		}).catch(() => {});
+		const response = NextResponse.json({ ok: true, token: saToken, redirect: "/accounts" });
+		response.headers.set("Cache-Control", "no-store");
+		response.cookies.set(SESSION_COOKIE, saToken, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			path: "/",
+			maxAge: 60 * 60 * 24 * 30,
+		});
+		return response;
+	}
+
 	const db = getDb(env);
 	const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
 	if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
@@ -42,6 +68,14 @@ export async function POST(request: Request) {
 	}
 	if (user.disabled) {
 		return NextResponse.json({ error: "Account disabled" }, { status: 403 });
+	}
+
+	// Second factor required — issue a short-lived pending token instead of a session.
+	if (user.totpEnabled) {
+		const pendingToken = await createPendingToken(user.id, user.passwordHash);
+		const response = NextResponse.json({ twoFactorRequired: true, pendingToken });
+		response.headers.set("Cache-Control", "no-store");
+		return response;
 	}
 
 	const token = await createSession(env, user.id);

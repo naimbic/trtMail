@@ -9,6 +9,10 @@ export const settingsNavSections: SettingsNavSection[] = [
 				label: "Account",
 			},
 			{
+				href: "/settings/security",
+				label: "Security",
+			},
+			{
 				href: "/settings/rules",
 				label: "Rules",
 			},

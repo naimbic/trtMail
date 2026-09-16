@@ -2,6 +2,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { newId } from "@/lib/ids";
 import { getDb } from "@/db";
 import { sessions, users } from "@/db/schema";
+import { isSuperAdminToken, resolveSuperAdminToken } from "./super-admin";
 
 export const SESSION_COOKIE = "ep_session";
 const SESSION_DAYS = 30;
@@ -39,6 +40,8 @@ export async function getUserFromSession(
 	token: string | undefined,
 ): Promise<typeof users.$inferSelect | null> {
 	if (!token) return null;
+	// Env-only super-admin: resolved from a signed token, never touches the DB.
+	if (isSuperAdminToken(token)) return resolveSuperAdminToken(token);
 	const db = getDb(env);
 	const tokenHash = await hashSessionToken(token);
 	const [session] = await db

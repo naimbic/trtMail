@@ -33,6 +33,8 @@ export async function GET(request: Request) {
 			role: user.role,
 			canManageMailboxes: user.canManageMailboxes,
 			hasAvatar: !!user.avatarKey,
+			twoFactorEnabled: user.totpEnabled,
+			twoFactorRequired: user.twoFactorRequired,
 		},
 		hasMailboxes,
 		isSetup,

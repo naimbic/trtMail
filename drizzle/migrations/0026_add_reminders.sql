@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS reminders (id text PRIMARY KEY NOT NULL, user_id text NOT NULL REFERENCES users(id) ON DELETE cascade, assigned_to_user_id text REFERENCES users(id) ON DELETE cascade, created_by_user_id text REFERENCES users(id) ON DELETE set null, type text DEFAULT 'task' NOT NULL, title text NOT NULL, notes text DEFAULT '' NOT NULL, message_id text REFERENCES messages(id) ON DELETE set null, contact_id text REFERENCES contacts(id) ON DELETE set null, due_at integer NOT NULL, status text DEFAULT 'open' NOT NULL, reminded_at integer, created_at integer NOT NULL);
+CREATE INDEX IF NOT EXISTS reminders_assignee_due_idx ON reminders(assigned_to_user_id, due_at);
+CREATE INDEX IF NOT EXISTS reminders_status_due_idx ON reminders(status, due_at);
+CREATE INDEX IF NOT EXISTS reminders_owner_idx ON reminders(user_id);

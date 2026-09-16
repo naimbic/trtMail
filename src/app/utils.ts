@@ -39,7 +39,7 @@ export const heroMessages: MailPreview[] = [
 	},
 	{
 		icon: MailCheck,
-		sender: "admin@mailflare.dev",
+		sender: "admin@trtmail.example",
 		subject: "Mailbox provisioned",
 		preview: "New routing mailbox is ready for customer replies.",
 		badge: "Admin",

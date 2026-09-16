@@ -9,7 +9,11 @@ export const users = sqliteTable("users", {
 	passwordHash: text("password_hash").notNull(),
 	name: text("name").notNull(),
 	avatarKey: text("avatar_key"),
-	role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
+	role: text("role", { enum: ["super_admin", "admin", "manager", "user"] }).notNull().default("user"),
+	totpSecret: text("totp_secret"),
+	totpEnabled: integer("totp_enabled", { mode: "boolean" }).notNull().default(false),
+	twoFactorRequired: integer("two_factor_required", { mode: "boolean" }).notNull().default(false),
+	backupCodes: text("backup_codes"),
 	disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
 	canManageMailboxes: integer("can_manage_mailboxes", { mode: "boolean" }).notNull().default(false),
 	createdByUserId: text("created_by_user_id").references((): AnySQLiteColumn => users.id, { onDelete: "set null" }),
@@ -280,6 +284,34 @@ export const calendarEvents = sqliteTable(
 	(t) => [index("calendar_events_user_starts_idx").on(t.userId, t.startsAt)],
 );
 
+export const reminders = sqliteTable(
+	"reminders",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		assignedToUserId: text("assigned_to_user_id").references(() => users.id, { onDelete: "cascade" }),
+		createdByUserId: text("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+		type: text("type", { enum: ["reply", "call", "contact", "follow_up", "task"] }).notNull().default("task"),
+		title: text("title").notNull(),
+		notes: text("notes").notNull().default(""),
+		messageId: text("message_id").references(() => messages.id, { onDelete: "set null" }),
+		contactId: text("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+		dueAt: integer("due_at", { mode: "timestamp" }).notNull(),
+		status: text("status", { enum: ["open", "done", "snoozed", "cancelled"] }).notNull().default("open"),
+		remindedAt: integer("reminded_at", { mode: "timestamp" }),
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+	},
+	(t) => [
+		index("reminders_assignee_due_idx").on(t.assignedToUserId, t.dueAt),
+		index("reminders_status_due_idx").on(t.status, t.dueAt),
+		index("reminders_owner_idx").on(t.userId),
+	],
+);
+
 export const routingRules = sqliteTable("routing_rules", {
 	id: text("id").primaryKey(),
 	userId: text("user_id")
@@ -442,6 +474,7 @@ export const schema = {
 	outboundJobs,
 	emailTemplates,
 	calendarEvents,
+	reminders,
 	routingRules,
 	webhooks,
 	webhookDeliveries,

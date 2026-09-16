@@ -43,6 +43,10 @@ export async function getLicenseStatus(env: CloudflareEnv): Promise<LicenseStatu
 }
 
 export async function getLicenseEntitlements(env: CloudflareEnv): Promise<LicenseEntitlements> {
+	// Self-hosted operators own their instance — allow unlocking team features via env.
+	if (process.env.SELF_HOSTED_UNLOCK === "true") {
+		return { plan: "team", canCustomizeBranding: true, canManageAccounts: true, canForwardEmail: true };
+	}
 	try {
 		const status = await getLicenseStatus(env);
 		// TODO: confirm Paymug's exact feature identifiers when they are documented; plan is authoritative meanwhile.
