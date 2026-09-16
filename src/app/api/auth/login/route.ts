@@ -13,6 +13,7 @@ import { RequestBodyTooLargeError } from "@/lib/http/errors";
 import { recordAuthActivity, getAuthActivityMetadata } from "@/lib/auth/activity";
 import { createAuditLog } from "@/lib/mailboxes/audit";
 import { isSuperAdminEmail, verifySuperAdminPassword, createSuperAdminToken } from "@/lib/auth/super-admin";
+import { createPendingToken } from "@/lib/auth/two-factor";
 
 export async function POST(request: Request) {
 	const env = getEnv();
@@ -67,6 +68,14 @@ export async function POST(request: Request) {
 	}
 	if (user.disabled) {
 		return NextResponse.json({ error: "Account disabled" }, { status: 403 });
+	}
+
+	// Second factor required — issue a short-lived pending token instead of a session.
+	if (user.totpEnabled) {
+		const pendingToken = await createPendingToken(user.id, user.passwordHash);
+		const response = NextResponse.json({ twoFactorRequired: true, pendingToken });
+		response.headers.set("Cache-Control", "no-store");
+		return response;
 	}
 
 	const token = await createSession(env, user.id);
