@@ -3,6 +3,7 @@ import { processInboundMessage } from '../email/inbound';
 import { createScheduledBackupIfDue,getBackupSettings } from '../backups/service';
 import { exportDatabaseRecords } from '../backups/export';
 import { syncInbox } from './imap';
+import { notifyDueReminders } from '../reminders/notify';
 
 async function backup(id:string) {
  const db=getServerDatabase(),env=getServerEnv();
@@ -40,6 +41,7 @@ export async function workerCycle() {
  const env=getServerEnv(), db=getServerDatabase().sqlite;
  try{await syncInbox();db.prepare("INSERT OR REPLACE INTO _cf_server_state VALUES ('imap-health',?)").run(JSON.stringify({ok:true,at:new Date().toISOString(),enabled:!!process.env.IMAP_HOST && !!process.env.IMAP_PASSWORD}));}catch{db.prepare("INSERT OR REPLACE INTO _cf_server_state VALUES ('imap-health',?)").run(JSON.stringify({ok:false,at:new Date().toISOString()}));console.error('IMAP sync failed; check provider credentials, TLS and mailbox settings.');}
  const id=await createScheduledBackupIfDue(env,new Date());if(id)enqueue('backup',{backupId:id},`scheduled-${id}`);
+ try{await notifyDueReminders(env);}catch{/* reminders still surface in-app */}
  await runJobs();
  const settings=await getBackupSettings(env);
  if(settings?.retentionEnabled){const expired=db.prepare("SELECT id,r2_key FROM backups WHERE status IN ('completed','failed') AND created_at<?").all(Math.floor(Date.now()/1000)-settings.retentionDays*86400);for(const row of expired){if(row.r2_key)await env.BUCKET.delete(String(row.r2_key));db.prepare('DELETE FROM backups WHERE id=?').run(row.id);}}

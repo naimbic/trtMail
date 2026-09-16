@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import {
   CalendarDays,
+  BellRing,
   Settings,
   Archive,
   Clock,
@@ -270,7 +271,7 @@ export function DashboardNav({ className }: { className?: string }) {
         />
       ))}
       <span className="flex-1" />
-      <div className="mt-6 space-y-1 border-t border-slate-200 pt-4">{!minimal && <p className="mail-nav-heading">WORKSPACE</p>}<NavItem link={{href:"/calendar",label:"Calendar",icon:CalendarDays}}/><NavItem link={{href:"/settings",label:"Settings",icon:Settings}}/></div>
+      <div className="mt-6 space-y-1 border-t border-slate-200 pt-4">{!minimal && <p className="mail-nav-heading">WORKSPACE</p>}<NavItem link={{href:"/reminders",label:"Reminders",icon:BellRing}}/><NavItem link={{href:"/calendar",label:"Calendar",icon:CalendarDays}}/><NavItem link={{href:"/settings",label:"Settings",icon:Settings}}/></div>
       <SidebarFooter />
     </nav>
   );

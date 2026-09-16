@@ -23,6 +23,7 @@ const MIGRATION_NAMES = [
 	"0021_add_mailbox_signature.sql",
 	"0022_add_mailbox_auto_reply.sql",
 	"0025_add_2fa_columns.sql",
+	"0026_add_reminders.sql",
 ];
 
 const INITIAL_SCHEMA_SQL = `
@@ -59,6 +60,10 @@ CREATE TABLE IF NOT EXISTS email_templates (id text PRIMARY KEY NOT NULL, user_i
 CREATE INDEX IF NOT EXISTS email_templates_user_idx ON email_templates(user_id);
 CREATE TABLE IF NOT EXISTS calendar_events (id text PRIMARY KEY NOT NULL, user_id text NOT NULL REFERENCES users(id) ON DELETE cascade, mailbox_id text REFERENCES mailboxes(id) ON DELETE set null, title text NOT NULL, description text DEFAULT '' NOT NULL, location text DEFAULT '' NOT NULL, attendees text DEFAULT '[]' NOT NULL, starts_at integer NOT NULL, ends_at integer NOT NULL, created_at integer NOT NULL, updated_at integer NOT NULL);
 CREATE INDEX IF NOT EXISTS calendar_events_user_starts_idx ON calendar_events(user_id, starts_at);
+CREATE TABLE IF NOT EXISTS reminders (id text PRIMARY KEY NOT NULL, user_id text NOT NULL REFERENCES users(id) ON DELETE cascade, assigned_to_user_id text REFERENCES users(id) ON DELETE cascade, created_by_user_id text REFERENCES users(id) ON DELETE set null, type text DEFAULT 'task' NOT NULL, title text NOT NULL, notes text DEFAULT '' NOT NULL, message_id text REFERENCES messages(id) ON DELETE set null, contact_id text REFERENCES contacts(id) ON DELETE set null, due_at integer NOT NULL, status text DEFAULT 'open' NOT NULL, reminded_at integer, created_at integer NOT NULL);
+CREATE INDEX IF NOT EXISTS reminders_assignee_due_idx ON reminders(assigned_to_user_id, due_at);
+CREATE INDEX IF NOT EXISTS reminders_status_due_idx ON reminders(status, due_at);
+CREATE INDEX IF NOT EXISTS reminders_owner_idx ON reminders(user_id);
 CREATE TABLE IF NOT EXISTS routing_rules (id text PRIMARY KEY NOT NULL, user_id text NOT NULL REFERENCES users(id) ON DELETE cascade, domain_id text NOT NULL REFERENCES domains(id) ON DELETE cascade, pattern text NOT NULL, match_field text DEFAULT 'email' NOT NULL, match_operator text DEFAULT 'contains' NOT NULL, match_value text DEFAULT '' NOT NULL, mailbox_id text REFERENCES mailboxes(id) ON DELETE set null, folder_id text REFERENCES folders(id) ON DELETE set null, action text DEFAULT 'store' NOT NULL, forward_to text, priority integer DEFAULT 0 NOT NULL, created_at integer NOT NULL);
 CREATE TABLE IF NOT EXISTS webhooks (id text PRIMARY KEY NOT NULL, user_id text NOT NULL REFERENCES users(id) ON DELETE cascade, url text NOT NULL, secret text NOT NULL, events text NOT NULL, enabled integer DEFAULT true NOT NULL, created_at integer NOT NULL);
 CREATE TABLE IF NOT EXISTS webhook_deliveries (id text PRIMARY KEY NOT NULL, webhook_id text NOT NULL REFERENCES webhooks(id) ON DELETE cascade, event_type text NOT NULL, payload text NOT NULL, status text DEFAULT 'pending' NOT NULL, attempts integer DEFAULT 0 NOT NULL, created_at integer NOT NULL);
