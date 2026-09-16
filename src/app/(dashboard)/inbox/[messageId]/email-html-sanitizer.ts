@@ -84,7 +84,10 @@ const TAG_ATTRIBUTES: Record<string, Set<string>> = {
 };
 
 const ALLOWED_STYLE_PROPERTIES = new Set([
+	"background",
 	"background-color",
+	"background-image",
+	"box-shadow",
 	"border",
 	"border-bottom",
 	"border-color",
