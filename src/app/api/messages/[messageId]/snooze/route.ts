@@ -29,12 +29,18 @@ export async function POST(
 		.from(messages)
 		.where(and(eq(messages.id, messageId), eq(messages.direction, "inbound")))
 		.limit(1);
-	if (!message?.mailboxId || message.status !== "received") {
-		return NextResponse.json({ error: "Message not found" }, { status: 404 });
+	if (!message) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+	if (!message.mailboxId) {
+		return NextResponse.json({ error: "This message isn't linked to a mailbox, so it can't be snoozed." }, { status: 400 });
+	}
+	if (message.status !== "received") {
+		return NextResponse.json({ error: `Only inbox messages can be snoozed (this one is "${message.status}").` }, { status: 400 });
 	}
 
 	const access = await getMailboxAccessLevel(db, user, message.mailboxId);
-	if (!access?.canManage) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+	if (!access?.canManage) {
+		return NextResponse.json({ error: "You don't have manage permission on this mailbox." }, { status: 403 });
+	}
 
 	await db
 		.update(messages)

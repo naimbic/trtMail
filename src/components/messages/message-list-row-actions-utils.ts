@@ -32,7 +32,10 @@ export async function snoozeMessage(messageId: string, snoozedUntil: string) {
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ snoozedUntil: new Date(snoozedUntil).toISOString() }),
 	});
-	if (!response.ok) throw new Error("Unable to snooze message");
+	if (!response.ok) {
+		const data = (await response.json().catch(() => ({}))) as { error?: unknown };
+		throw new Error(typeof data.error === "string" ? data.error : "Unable to snooze message");
+	}
 	window.dispatchEvent(new Event("trtmail:messages-changed"));
 }
 
