@@ -2,6 +2,19 @@ import { and, eq, isNull, lte } from "drizzle-orm";
 import { getDb } from "@/db";
 import { reminders, users, mailboxes, domains } from "@/db/schema";
 import { sendEmail } from "@/lib/email/send";
+import { renderSystemEmail } from "@/lib/email/templates";
+
+const TYPE_LABEL: Record<string, string> = {
+	reply: "Reply",
+	call: "Call",
+	contact: "Contact",
+	follow_up: "Follow-up",
+	task: "Task",
+};
+
+function esc(v: unknown): string {
+	return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 /**
  * Send an email for reminders that have become due and were not yet notified.
@@ -35,13 +48,23 @@ export async function notifyDueReminders(env: CloudflareEnv): Promise<void> {
 			if (!mbx) continue;
 			const from = `${mbx.localPart}@${mbx.hostname}`;
 			const when = new Date(reminder.dueAt).toLocaleString();
+			const label = TYPE_LABEL[reminder.type] ?? "Task";
+			const html = renderSystemEmail({
+				heading: reminder.title,
+				badge: `${label} · due ${when}`,
+				bodyHtml: `<p style="margin:0 0 12px;">This is your reminder — <strong>${esc(label)}</strong>, due <strong>${esc(when)}</strong>.</p>${
+					reminder.notes ? `<p style="margin:0;white-space:pre-wrap;color:#4b5563;">${esc(reminder.notes)}</p>` : ""
+				}`,
+				footerNote: "Reminder from trtDigital Mail — open the app to mark it done.",
+			});
 			await sendEmail(env, {
 				userId: recipientId,
 				mailboxId: mbx.id,
 				from,
 				to: recipient.email,
 				subject: `Reminder: ${reminder.title}`,
-				text: `This is your reminder (${reminder.type}) due ${when}.\n\n${reminder.title}\n${reminder.notes ?? ""}`.trim(),
+				text: `This is your reminder (${label}) due ${when}.\n\n${reminder.title}\n${reminder.notes ?? ""}`.trim(),
+				html,
 			});
 		} catch {
 			// In-app badge/list still surfaces it; ignore email failures.
