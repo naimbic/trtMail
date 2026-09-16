@@ -10,7 +10,7 @@ import type { AccountRouteParams } from "../types";
 
 const PERMISSIONS = ["read_only", "send_as", "send_on_behalf", "full_access"] as const;
 
-// GET — grants held by this account (which shared mailboxes it can access, at what permission).
+// GET — every shared mailbox, annotated with this account's current permission (if any).
 export async function GET(request: Request, { params }: AccountRouteParams) {
 	const access = await requireTeamAdmin(request);
 	if (access.error) return access.error;
@@ -18,23 +18,21 @@ export async function GET(request: Request, { params }: AccountRouteParams) {
 	const db = getDb(access.env);
 	const rows = await db
 		.select({
-			id: mailboxAccess.id,
-			mailboxId: mailboxAccess.mailboxId,
-			permission: mailboxAccess.permission,
+			id: mailboxes.id,
+			mailboxId: mailboxes.id,
 			localPart: mailboxes.localPart,
+			displayName: mailboxes.displayName,
+			domainId: mailboxes.domainId,
 			hostname: domains.hostname,
+			permission: mailboxAccess.permission,
 		})
-		.from(mailboxAccess)
-		.innerJoin(mailboxes, eq(mailboxAccess.mailboxId, mailboxes.id))
+		.from(mailboxes)
 		.innerJoin(domains, eq(mailboxes.domainId, domains.id))
-		.where(eq(mailboxAccess.userId, id));
+		.leftJoin(mailboxAccess, and(eq(mailboxAccess.mailboxId, mailboxes.id), eq(mailboxAccess.userId, id)))
+		.where(eq(mailboxes.type, "shared"))
+		.orderBy(mailboxes.localPart);
 	return NextResponse.json({
-		grants: rows.map((r) => ({
-			id: r.id,
-			mailboxId: r.mailboxId,
-			address: `${r.localPart}@${r.hostname}`,
-			permission: r.permission,
-		})),
+		mailboxes: rows.map((r) => ({ ...r, permission: r.permission ?? undefined })),
 	});
 }
 

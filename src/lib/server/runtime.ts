@@ -26,9 +26,11 @@ export function getServerEnv():CloudflareEnv {
     ASSETS:{fetch:async(input:string)=>{const path=new URL(input).pathname; if(path!=='/trtmail-icon.svg')return new Response(null,{status:404});return new Response(readFileSync(resolve('public/trtmail-icon.svg')),{headers:{'Content-Type':'image/svg+xml'}});}},
     EMAIL:{send:async(input:any)=>{
       if(!process.env.SMTP_HOST || (process.env.SMTP_USER && !process.env.SMTP_PASSWORD))throw new Error('SMTP is not configured. Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD in Coolify.');
-      const allowed=(process.env.SMTP_ALLOWED_FROM||process.env.MAIL_ADDRESS||'').toLowerCase().split(',').map(s=>s.trim());
+      const allowed=(process.env.SMTP_ALLOWED_FROM||process.env.MAIL_ADDRESS||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
       const address=(input.from.match(/<([^>]+)>/)?.[1]||input.from).toLowerCase();
-      if(!allowed.includes(address))throw new Error('This sender is not authorized by SMTP_ALLOWED_FROM');
+      // Match exact address, '*' (allow all), or a domain entry like '@domain.com' / '*@domain.com'.
+      const senderOk=allowed.some(a=>a==='*'||a===address||(a.startsWith('@')&&address.endsWith(a))||(a.startsWith('*@')&&address.endsWith(a.slice(1))));
+      if(!senderOk)throw new Error(`Sender ${address} is not authorized. Add it to SMTP_ALLOWED_FROM (comma-separated), or set SMTP_ALLOWED_FROM=* to allow every address.`);
       const result=await transporter.sendMail({...input,attachments:input.attachments?.map((a:any)=>({filename:a.filename,content:Buffer.from(a.content),contentType:a.type,contentDisposition:a.disposition,cid:a.contentId}))});
       if(!result.accepted?.length || result.rejected?.length)throw new Error('SMTP did not accept all recipients');
       return {messageId:result.messageId};

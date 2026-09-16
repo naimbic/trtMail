@@ -17,6 +17,9 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 	const snoozePresets = getSnoozePresets();
 	const snoozed = isMessageSnoozed(message.snoozedUntil);
 	const readAction = message.read ? "unread" : "read";
+	// Color the snooze clock by status: blue = snoozed/upcoming, red = past its snooze time.
+	const snoozeAt = message.snoozedUntil ? new Date(message.snoozedUntil).getTime() : null;
+	const snoozeColor = snoozeAt ? (snoozeAt < Date.now() ? "text-red-500" : "text-blue-500") : "";
 
 	async function handleSnooze() {
 		setSnoozing(true);
@@ -57,7 +60,7 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 						}
 						setSnoozeOpen(true);
 					}} aria-label={snoozed ? "Unsnooze" : "Snooze"}>
-						<Clock className="h-4 w-4" />
+						<Clock className={`h-4 w-4 ${snoozeColor}`} />
 					</Button>
 				</Tooltip>
 			</div>

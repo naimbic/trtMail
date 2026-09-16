@@ -118,11 +118,15 @@ export async function saveManagedAccount(account: ManagedAccount): Promise<void>
 			role: account.role,
 			disabled: account.disabled,
 			canManageMailboxes: account.canManageMailboxes,
-			forwardingEmail: account.forwardingEmail,
+			// Only send forwardingEmail when it's a real string — sending null fails validation.
+			...(typeof account.forwardingEmail === "string" ? { forwardingEmail: account.forwardingEmail } : {}),
 		}),
 	});
-	const data = (await response.json()) as { error?: string };
-	if (!response.ok) throw new Error(data.error ?? "Unable to update account");
+	const data = (await response.json()) as { error?: unknown };
+	if (!response.ok) {
+		const message = typeof data.error === "string" ? data.error : "Unable to update account (check the fields)";
+		throw new Error(message);
+	}
 }
 
 export async function uploadManagedAccountAvatar(accountId: string, file: File): Promise<void> {
