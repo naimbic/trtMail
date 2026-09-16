@@ -18,3 +18,16 @@ export async function submitLogin(form: FormData): Promise<{ ok: boolean; data: 
 		data: (await persistAuthSession(res)) as LoginResult,
 	};
 }
+
+export async function submitTwoFactor(pendingToken: string, code: string): Promise<{ ok: boolean; data: LoginResult }> {
+	const res = await fetch("/api/auth/2fa/challenge", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		signal: AbortSignal.timeout(20_000),
+		body: JSON.stringify({ pendingToken, code }),
+	});
+	return {
+		ok: res.ok,
+		data: (await persistAuthSession(res)) as LoginResult,
+	};
+}
