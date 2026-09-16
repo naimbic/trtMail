@@ -18,6 +18,7 @@ export function buildSendFormData(input: {
 	mailboxId?: string;
 	subject: string;
 	text: string;
+	html?: string;
 	to: string;
 }): FormData {
 	const form = new FormData();
@@ -25,6 +26,7 @@ export function buildSendFormData(input: {
 	form.set("to", input.to);
 	form.set("subject", input.subject);
 	form.set("text", input.text);
+	if (input.html && input.html.trim()) form.set("html", input.html);
 	if (input.mailboxId) form.set("mailboxId", input.mailboxId);
 	for (const attachment of input.attachments) {
 		form.append("attachments", attachment.file);
