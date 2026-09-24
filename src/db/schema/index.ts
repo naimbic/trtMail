@@ -191,6 +191,8 @@ export const messages = sqliteTable(
 		folderId: text("folder_id").references(() => folders.id, { onDelete: "set null" }),
 		fromAddr: text("from_addr").notNull(),
 		toAddr: text("to_addr").notNull(),
+		ccAddr: text("cc_addr"),
+		bccAddr: text("bcc_addr"),
 		subject: text("subject"),
 		snippet: text("snippet"),
 		textBody: text("text_body"),

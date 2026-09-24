@@ -58,6 +58,22 @@ export function formatPostalAddressList(addresses: Address[] | undefined, fallba
 	return formatEmailAddress(mailbox.address, mailbox.name);
 }
 
+/** Format EVERY mailbox in a list (flattening groups), joined with ", ". */
+export function formatPostalAddressesAll(addresses: Address[] | undefined): string | null {
+	if (!addresses?.length) return null;
+	const out: string[] = [];
+	for (const address of addresses) {
+		if ("address" in address && address.address) {
+			out.push(formatEmailAddress(address.address, address.name));
+		} else if (address.group) {
+			for (const member of address.group) {
+				if (member.address) out.push(formatEmailAddress(member.address, member.name));
+			}
+		}
+	}
+	return out.length ? out.join(", ") : null;
+}
+
 function getFirstPostalMailbox(address: Address | undefined): Mailbox | null {
 	if (!address) return null;
 	if ("address" in address && address.address) return address;

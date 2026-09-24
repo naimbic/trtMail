@@ -12,6 +12,8 @@ export function selectDraftWithBody(db: Db, userId: string, draftId: string) {
 			mailboxId: messages.mailboxId,
 			fromAddr: messages.fromAddr,
 			toAddr: messages.toAddr,
+			ccAddr: messages.ccAddr,
+			bccAddr: messages.bccAddr,
 			subject: messages.subject,
 			status: messages.status,
 			textBody: messages.textBody,

@@ -84,6 +84,7 @@ export async function processInboundMessage(
 			providerMessageId: parsed.messageId,
 			fromAddr,
 			toAddr,
+			ccAddr: parsed.ccAddr,
 			subject: parsed.subject,
 			snippet,
 			textBody: parsed.text,

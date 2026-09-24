@@ -14,6 +14,8 @@ export type SendEmailInput = {
 	userId: string;
 	from: string;
 	to: string;
+	cc?: string;
+	bcc?: string;
 	subject: string;
 	html?: string;
 	text?: string;
@@ -42,6 +44,8 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 		direction: "outbound",
 		fromAddr: sender.fromAddr,
 		toAddr: input.to,
+		ccAddr: input.cc || null,
+		bccAddr: input.bcc || null,
 		subject: input.subject,
 		snippet,
 		textBody: input.text ?? null,
@@ -73,6 +77,8 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 		const response = await env.EMAIL.send({
 			from: sender.fromAddr,
 			to: input.to,
+			...(input.cc ? { cc: input.cc } : {}),
+			...(input.bcc ? { bcc: input.bcc } : {}),
 			subject: input.subject,
 			headers: input.headers,
 			html: input.html,

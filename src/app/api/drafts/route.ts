@@ -60,6 +60,8 @@ export async function POST(request: Request) {
 		direction: "outbound",
 		fromAddr: sender.fromAddr,
 		toAddr: input.to ?? "",
+		ccAddr: input.cc || null,
+		bccAddr: input.bcc || null,
 		subject: input.subject ?? null,
 		snippet: buildSnippet(text || null, html || null),
 		textBody: text || null,

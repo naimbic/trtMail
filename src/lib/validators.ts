@@ -4,6 +4,8 @@ import { DEFAULT_FOLDER_COLOR, FOLDER_COLOR_VALUES } from "@/lib/folders/colors"
 export const sendEmailSchema = z.object({
 	from: z.string().min(3).max(500),
 	to: z.string().min(3).max(500),
+	cc: z.string().max(2000).optional(),
+	bcc: z.string().max(2000).optional(),
 	subject: z.string().min(1).max(500),
 	html: z.string().max(2 * 1024 * 1024).optional(),
 	text: z.string().max(2 * 1024 * 1024).optional(),

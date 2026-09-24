@@ -2,7 +2,7 @@
 
 import { createElement, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Ban, BellOff, Mail, MailOpen, MoreVertical, Reply, ShieldAlert, Trash2 } from "lucide-react";
+import { Archive, Ban, BellOff, Mail, MailOpen, MoreVertical, Reply, ReplyAll, ShieldAlert, Trash2 } from "lucide-react";
 import { useCompose } from "@/components/compose/compose-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import type { MessageActionsProps } from "./types";
 import {
 	confirmTrashWithoutUnsubscribe,
 	blockMessageContact,
+	buildReplyAllCc,
 	createReplyDraft,
 	createTrashSenderRule,
 	getMessageActionRedirect,
@@ -30,6 +31,8 @@ export function MessageActions({
 	subject,
 	bodyText,
 	ownAddress,
+	toAddr,
+	ccAddr,
 }: MessageActionsProps) {
 	const router = useRouter();
 	const { openDraftComposer } = useCompose();
@@ -80,7 +83,9 @@ export function MessageActions({
 		}
 	}
 
-	async function handleReply() {
+	const replyAllCc = buildReplyAllCc({ toAddr, ccAddr, ownAddress, senderAddress });
+
+	async function handleReply(cc?: string) {
 		setPendingAction("reply");
 		setError(null);
 		try {
@@ -90,6 +95,7 @@ export function MessageActions({
 				ownAddress,
 				subject,
 				bodyText,
+				cc,
 			});
 			openDraftComposer(draftId);
 		} catch (replyError) {
@@ -135,11 +141,25 @@ export function MessageActions({
 						size="sm"
 						aria-label="Reply"
 						disabled={disabled}
-						onClick={handleReply}
+						onClick={() => handleReply()}
 					>
 						<Reply className="h-5 w-5" />
 					</Button>
 				</Tooltip>
+				{replyAllCc && (
+					<Tooltip label="Reply all">
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							aria-label="Reply all"
+							disabled={disabled}
+							onClick={() => handleReply(replyAllCc)}
+						>
+							<ReplyAll className="h-5 w-5" />
+						</Button>
+					</Tooltip>
+				)}
 				<Tooltip label="Archive">
 					<Button
 						variant="ghost"

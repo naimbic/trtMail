@@ -1,5 +1,5 @@
 import PostalMime from "postal-mime";
-import { formatPostalAddress, formatPostalAddressList } from "@/lib/email/address";
+import { formatPostalAddress, formatPostalAddressList, formatPostalAddressesAll } from "@/lib/email/address";
 import { normalizeAttachmentContent } from "@/lib/email/attachments";
 import { getLatestEmailContent, htmlToReadableText } from "@/lib/email/reply-content-utils";
 import type { AttachmentContent } from "@/lib/email/attachment-types";
@@ -12,6 +12,7 @@ export type ParsedEmail = {
 	messageId: string | null;
 	fromAddr: string | null;
 	toAddr: string | null;
+	ccAddr: string | null;
 	date: Date | null;
 	attachments: AttachmentContent[];
 };
@@ -27,6 +28,7 @@ export async function parseRawMime(raw: ArrayBuffer): Promise<ParsedEmail> {
 		messageId: email.messageId ?? null,
 		fromAddr: formatPostalAddress(email.from, null),
 		toAddr: formatPostalAddressList(email.to, null),
+		ccAddr: formatPostalAddressesAll(email.cc),
 		date: date && !Number.isNaN(date.getTime()) ? date : null,
 		attachments: email.attachments.map((attachment, index) => ({
 			filename: attachment.filename ?? `attachment-${index + 1}`,

@@ -8,4 +8,6 @@ export interface SendRequestPayload {
 	subject: string;
 	text?: string;
 	to: string;
+	cc?: string;
+	bcc?: string;
 }

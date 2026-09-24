@@ -10,7 +10,14 @@ import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { authFetch } from "@/lib/auth/client";
 import { formatEmailAddress, getEmailAddress } from "@/lib/email/address";
 import { cn } from "@/lib/utils";
-import { applyMailboxSignature, buildSendFormData, fetchDraft, formatAttachmentSize } from "./utils";
+import {
+	applyMailboxSignatureHtml,
+	buildSendFormData,
+	fetchDraft,
+	formatAttachmentSize,
+	htmlToPlainText,
+	signatureBlockHtml,
+} from "./utils";
 import { RichEditor } from "./rich-editor";
 
 function textToHtml(text: string): string {
@@ -37,6 +44,9 @@ export function ComposeForm({
 	const { selectedMailbox, setSelectedMailbox, mailboxes } = useSelectedMailbox();
 	const [draftId, setDraftId] = useState<string | null>(null);
 	const [to, setTo] = useState("");
+	const [cc, setCc] = useState("");
+	const [bcc, setBcc] = useState("");
+	const [showCcBcc, setShowCcBcc] = useState(false);
 	const [subject, setSubject] = useState("");
 	const [text, setText] = useState("");
 	const [html, setHtml] = useState("");
@@ -49,7 +59,6 @@ export function ComposeForm({
 	const [selectedFrom, setSelectedFrom] = useState("");
 	const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const attachmentInput = useRef<HTMLInputElement | null>(null);
-	const previousSignature = useRef("");
 
 	useEffect(() => {
 		if (!selectedMailbox && mailboxes.length === 1) setSelectedMailbox(mailboxes[0]);
@@ -99,8 +108,12 @@ export function ComposeForm({
 
 				setDraftId(draft.id);
 				setTo(draft.toAddr);
+				setCc(draft.ccAddr ?? "");
+				setBcc(draft.bccAddr ?? "");
+				if ((draft.ccAddr ?? "") || (draft.bccAddr ?? "")) setShowCcBcc(true);
 				setSubject(draft.subject ?? "");
 				setText(draft.textBody ?? "");
+				setHtml(draft.htmlBody ?? textToHtml(draft.textBody ?? ""));
 				setLoadedDraftMailboxId(draft.mailboxId);
 				setLoadedDraftFrom(getEmailAddress(draft.fromAddr).toLowerCase());
 			})
@@ -134,14 +147,14 @@ export function ComposeForm({
 	useEffect(() => {
 		if (loadingDraft) return;
 		const nextSignature = selectedMailbox?.signature ?? "";
-		setText((current) => applyMailboxSignature(current, previousSignature.current, nextSignature));
-		previousSignature.current = nextSignature;
+		setHtml((current) => applyMailboxSignatureHtml(current, nextSignature));
 	}, [loadingDraft, selectedMailbox?.id, selectedMailbox?.signature]);
 
 	useEffect(() => {
-		const bodyContent = text.trim();
-		const signatureOnly = bodyContent === (selectedMailbox?.signature?.trim() ?? "");
-		const hasContent = to.trim() || subject.trim() || (bodyContent && !signatureOnly);
+		const bodyText = htmlToPlainText(html);
+		const signatureText = htmlToPlainText(signatureBlockHtml(selectedMailbox?.signature));
+		const signatureOnly = !bodyText || bodyText === signatureText;
+		const hasContent = to.trim() || cc.trim() || bcc.trim() || subject.trim() || !signatureOnly;
 		if (!fromAddr || !hasContent || loadingDraft) return;
 		if (saveTimer.current) clearTimeout(saveTimer.current);
 
@@ -150,8 +163,11 @@ export function ComposeForm({
 				mailboxId: selectedMailbox?.id,
 				from: fromAddr,
 				to,
+				cc,
+				bcc,
 				subject,
 				text,
+				html,
 			};
 			const res = await authFetch(draftId ? `/api/drafts/${draftId}` : "/api/drafts", {
 				method: draftId ? "PATCH" : "POST",
@@ -165,7 +181,7 @@ export function ComposeForm({
 		return () => {
 			if (saveTimer.current) clearTimeout(saveTimer.current);
 		};
-	}, [draftId, fromAddr, loadingDraft, selectedMailbox?.id, selectedMailbox?.signature, subject, text, to]);
+	}, [bcc, cc, draftId, fromAddr, html, loadingDraft, selectedMailbox?.id, selectedMailbox?.signature, subject, text, to]);
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -176,6 +192,8 @@ export function ComposeForm({
 				attachments,
 				from: fromAddr,
 				to,
+				cc,
+				bcc,
 				subject,
 				text,
 				html,
@@ -197,8 +215,12 @@ export function ComposeForm({
 		}
 		setDraftId(null);
 		setTo("");
+		setCc("");
+		setBcc("");
+		setShowCcBcc(false);
 		setSubject("");
-		setText(applyMailboxSignature("", "", selectedMailbox?.signature));
+		setText("");
+		setHtml(signatureBlockHtml(selectedMailbox?.signature));
 		setAttachments([]);
 		setToast({ type: "success", message: "Message sent" });
 		window.dispatchEvent(new Event("trtmail:messages-changed"));
@@ -285,7 +307,7 @@ export function ComposeForm({
 						))}
 					</Select>
 				</div>
-				<div className="border-b border-neutral-100 px-4 py-1">
+				<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
 					<Label htmlFor={`${mode}-to`} className="sr-only">To</Label>
 					<Input
 						id={`${mode}-to`}
@@ -295,9 +317,46 @@ export function ComposeForm({
 						placeholder='Recipients, or "Maya Chen" <maya@example.com>'
 						required
 						disabled={loadingDraft}
-						className="h-8 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
+						className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 					/>
+					{!showCcBcc && (
+						<button
+							type="button"
+							onClick={() => setShowCcBcc(true)}
+							className="shrink-0 text-xs font-medium text-neutral-500 hover:text-neutral-800"
+						>
+							Cc / Bcc
+						</button>
+					)}
 				</div>
+				{showCcBcc && (
+					<>
+						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
+							<Label htmlFor={`${mode}-cc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Cc</Label>
+							<Input
+								id={`${mode}-cc`}
+								value={cc}
+								onChange={(event) => setCc(event.target.value)}
+								type="text"
+								placeholder="Carbon-copy recipients"
+								disabled={loadingDraft}
+								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
+							/>
+						</div>
+						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
+							<Label htmlFor={`${mode}-bcc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Bcc</Label>
+							<Input
+								id={`${mode}-bcc`}
+								value={bcc}
+								onChange={(event) => setBcc(event.target.value)}
+								type="text"
+								placeholder="Blind carbon-copy recipients"
+								disabled={loadingDraft}
+								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
+							/>
+						</div>
+					</>
+				)}
 				<div className="border-b border-neutral-100 px-4 py-1">
 					<Label htmlFor={`${mode}-subject`} className="sr-only">Subject</Label>
 					<Input
@@ -313,7 +372,7 @@ export function ComposeForm({
 				<div className="min-h-0 flex-1 px-4 py-2">
 					<Label htmlFor={`${mode}-text`} className="sr-only">Body</Label>
 					<RichEditor
-						seed={textToHtml(text)}
+						seed={html}
 						disabled={loadingDraft}
 						onChange={(nextHtml, nextText) => {
 							setHtml(nextHtml);

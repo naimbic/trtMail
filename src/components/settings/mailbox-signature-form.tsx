@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichEditor } from "@/components/compose/rich-editor";
 import { updateMailboxSignature } from "./utils";
 
 export function MailboxSignatureForm() {
@@ -49,16 +49,17 @@ export function MailboxSignatureForm() {
 		<form onSubmit={onSubmit} className="space-y-4">
 			<div className="space-y-2">
 				<Label htmlFor="mailboxSignature">Signature for {address}</Label>
-				<Textarea
-					id="mailboxSignature"
-					value={signature}
-					onChange={(event) => setSignature(event.target.value)}
-					placeholder={"Your name\nRole or company\nContact details"}
-					rows={6}
-					disabled={!canManage || saving}
-				/>
+				<div className="min-h-[180px] rounded-lg border border-neutral-200 px-3 py-2">
+					<RichEditor
+						seed={savedSignature}
+						disabled={!canManage || saving}
+						onChange={(nextHtml) => setSignature(nextHtml)}
+						placeholder={"Your name\nRole or company\nContact details"}
+						className="min-h-[130px]"
+					/>
+				</div>
 				<p className="text-xs leading-5 text-neutral-500">
-					This signature is added when composing from the selected inbox.
+					Formatted with the same editor as the composer. Added automatically when you write from this inbox.
 				</p>
 			</div>
 			<div className="flex items-center gap-3">

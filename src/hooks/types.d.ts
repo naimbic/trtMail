@@ -13,6 +13,8 @@ export type Message = {
 	providerMessageId: string | null;
 	fromAddr: string;
 	toAddr: string;
+	ccAddr?: string | null;
+	bccAddr?: string | null;
 	fromContactName?: string | null;
 	toContactName?: string | null;
 	subject: string | null;

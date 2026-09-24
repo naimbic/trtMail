@@ -128,6 +128,8 @@ export default function MessageDetailPage() {
           subject={message.subject}
           bodyText={body?.textBody}
           ownAddress={ownAddress}
+          toAddr={message.toAddr}
+          ccAddr={message.ccAddr}
         />
       </div>
       <article className="px-6 py-4">
@@ -163,6 +165,9 @@ export default function MessageDetailPage() {
                 toName
               )}
             </p>
+            {message.ccAddr && (
+              <p className="text-xs text-neutral-500">cc {message.ccAddr}</p>
+            )}
           </div>
           <p className="text-xs text-neutral-400">
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}

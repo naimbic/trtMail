@@ -140,12 +140,41 @@ export function buildReplyQuote(
   return `\n\n${getEmailAddress(senderAddress)} wrote:\n${quoted}\n`;
 }
 
+/**
+ * Reply-all recipients: everyone on the original To + Cc, minus ourselves and
+ * the sender (who becomes the To). Preserves the original "Name <email>" form,
+ * de-duplicates by email address.
+ */
+export function buildReplyAllCc(input: {
+  toAddr?: string | null;
+  ccAddr?: string | null;
+  ownAddress?: string | null;
+  senderAddress: string;
+}): string {
+  const splitList = (value: string | null | undefined) =>
+    (value ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
+  const seen = new Set(
+    [getEmailAddress(input.ownAddress ?? ""), getEmailAddress(input.senderAddress)]
+      .map((email) => email.toLowerCase())
+      .filter(Boolean),
+  );
+  const out: string[] = [];
+  for (const entry of [...splitList(input.toAddr), ...splitList(input.ccAddr)]) {
+    const email = getEmailAddress(entry).toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
+    out.push(entry);
+  }
+  return out.join(", ");
+}
+
 export async function createReplyDraft({
   mailboxId,
   senderAddress,
   ownAddress,
   subject,
   bodyText,
+  cc,
 }: ReplyDraftInput) {
   const to = getEmailAddress(senderAddress).trim();
   if (!to) throw new Error("Sender address is required");
@@ -158,6 +187,7 @@ export async function createReplyDraft({
       // The API rejects the draft unless `from` matches the mailbox address.
       from: getEmailAddress(ownAddress ?? ""),
       to,
+      ...(cc ? { cc } : {}),
       subject: buildReplySubject(subject),
       text: buildReplyQuote(senderAddress, bodyText),
     }),

@@ -19,6 +19,9 @@ import {
 	RemoveFormatting,
 	Highlighter,
 	Baseline,
+	Undo2,
+	Redo2,
+	Unlink,
 } from "lucide-react";
 
 /**
@@ -29,6 +32,18 @@ import {
 
 const TEXT_COLORS = ["#111827", "#dc2626", "#ea580c", "#16a34a", "#2563eb", "#7c3aed", "#db2777", "#6b7280"];
 const HIGHLIGHTS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e9d5ff", "transparent"];
+const FONTS = [
+	{ label: "Sans", value: "Arial, Helvetica, sans-serif" },
+	{ label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+	{ label: "Mono", value: "ui-monospace, Menlo, monospace" },
+];
+// execCommand fontSize takes 1–7; map to friendly labels.
+const FONT_SIZES = [
+	{ label: "Small", value: "2" },
+	{ label: "Normal", value: "3" },
+	{ label: "Large", value: "5" },
+	{ label: "Huge", value: "6" },
+];
 
 export function RichEditor({
 	seed,
@@ -82,6 +97,34 @@ export function RichEditor({
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="flex flex-wrap items-center gap-0.5 border-b border-neutral-100 pb-2">
+				<button type="button" title="Undo" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("undo")}><Undo2 className="h-4 w-4" /></button>
+				<button type="button" title="Redo" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("redo")}><Redo2 className="h-4 w-4" /></button>
+				<Divider />
+				<select
+					title="Font"
+					aria-label="Font family"
+					disabled={disabled}
+					onMouseDown={(e) => e.preventDefault()}
+					defaultValue=""
+					onChange={(e) => { const v = e.target.value; if (v) exec("fontName", v); e.currentTarget.selectedIndex = 0; }}
+					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
+				>
+					<option value="" disabled>Font</option>
+					{FONTS.map((f) => <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>)}
+				</select>
+				<select
+					title="Font size"
+					aria-label="Font size"
+					disabled={disabled}
+					onMouseDown={(e) => e.preventDefault()}
+					defaultValue=""
+					onChange={(e) => { const v = e.target.value; if (v) exec("fontSize", v); e.currentTarget.selectedIndex = 0; }}
+					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
+				>
+					<option value="" disabled>Size</option>
+					{FONT_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+				</select>
+				<Divider />
 				<button type="button" title="Heading 1" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => toggleBlock("h1")}><Heading1 className="h-4 w-4" /></button>
 				<button type="button" title="Heading 2" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => toggleBlock("h2")}><Heading2 className="h-4 w-4" /></button>
 				<Divider />
@@ -121,6 +164,7 @@ export function RichEditor({
 				<button type="button" title="Align right" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("justifyRight")}><AlignRight className="h-4 w-4" /></button>
 				<Divider />
 				<button type="button" title="Insert link" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => { const url = window.prompt("Link URL"); if (url) exec("createLink", url); }}><Link2 className="h-4 w-4" /></button>
+				<button type="button" title="Remove link" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("unlink")}><Unlink className="h-4 w-4" /></button>
 				<button type="button" title="Clear formatting" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => { exec("removeFormat"); exec("formatBlock", "P"); }}><RemoveFormatting className="h-4 w-4" /></button>
 			</div>
 			<div
