@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Clock, Mail, MailOpen, Reply, ReplyAll, Trash2 } from "lucide-react";
+import { Archive, Clock, Mail, MailOpen, Pin, Reply, ReplyAll, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useCompose } from "@/components/compose/compose-context";
 import { buildReplyAllCc, createReplyDraft } from "@/components/message-actions/utils";
 import type { MessageListRowActionsProps } from "./types";
-import { getSnoozePresets, isMessageSnoozed, snoozeMessage, unsnoozeMessage } from "./message-list-row-actions-utils";
+import { getSnoozePresets, isMessageSnoozed, snoozeMessage, toggleMessagePin, toggleMessageStar, unsnoozeMessage } from "./message-list-row-actions-utils";
 
 export function MessageListRowActions({ message, onAction }: MessageListRowActionsProps) {
 	const { openDraftComposer } = useCompose();
@@ -17,6 +17,8 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 	const [snoozedUntil, setSnoozedUntil] = useState(() => getSnoozePresets()[0].value);
 	const [snoozing, setSnoozing] = useState(false);
 	const [replying, setReplying] = useState(false);
+	const [pinned, setPinned] = useState(Boolean(message.pinned));
+	const [starred, setStarred] = useState(Boolean(message.starred));
 	const [error, setError] = useState<string | null>(null);
 	const snoozePresets = getSnoozePresets();
 	const snoozed = isMessageSnoozed(message.snoozedUntil);
@@ -82,6 +84,16 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 					</Tooltip>
 				)}
 				<span className="mx-0.5 h-5 w-px bg-neutral-200" />
+				<Tooltip label={pinned ? "Unpin" : "Pin"}>
+					<Button type="button" variant="ghost" size="sm" onClick={() => void toggleMessagePin(message.id).then((r) => setPinned(r.pinned))} aria-label={pinned ? "Unpin" : "Pin"}>
+						<Pin className={`h-4 w-4 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
+					</Button>
+				</Tooltip>
+				<Tooltip label={starred ? "Unstar" : "Star"}>
+					<Button type="button" variant="ghost" size="sm" onClick={() => void toggleMessageStar(message.id).then((r) => setStarred(r.starred))} aria-label={starred ? "Unstar" : "Star"}>
+						<Star className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
+					</Button>
+				</Tooltip>
 				<Tooltip label="Archive">
 					<Button type="button" variant="ghost" size="sm" onClick={() => void onAction("archive")} aria-label="Archive">
 						<Archive className="h-4 w-4" />

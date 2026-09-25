@@ -95,7 +95,7 @@ export async function GET(request: Request) {
 		.select()
 		.from(messages)
 		.where(where)
-		.orderBy(desc(messages.createdAt))
+		.orderBy(desc(messages.pinned), desc(messages.createdAt))
 		.limit(limit)
 		.offset(offset);
 	const mailboxNameMap = new Map(

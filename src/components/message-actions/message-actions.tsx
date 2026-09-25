@@ -6,6 +6,7 @@ import { Archive, Ban, BellOff, Mail, MailOpen, MoreVertical, Reply, ReplyAll, S
 import { useCompose } from "@/components/compose/compose-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { MoveToFolder } from "./move-to-folder";
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import type { MessageActionsProps } from "./types";
 import {
@@ -204,6 +205,14 @@ export function MessageActions({
 						{read ? <Mail className="h-5 w-5" /> : <MailOpen className="h-5 w-5" />}
 					</Button>
 				</Tooltip>
+				<MoveToFolder
+					messageId={messageId}
+					mailboxId={mailboxId}
+					onMoved={() => {
+						router.push("/inbox");
+						router.refresh();
+					}}
+				/>
 				<div className="relative">
 					<Tooltip label="More actions">
 						<Button

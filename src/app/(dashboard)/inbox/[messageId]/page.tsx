@@ -26,6 +26,7 @@ import {
 } from "./utils";
 import { extractCloudAttachments } from "./cloud-attachment-utils";
 import { sanitizeEmailHtml } from "./email-html-sanitizer";
+import { linkify } from "./linkify";
 
 export default function MessageDetailPage() {
   const params = useParams<{ messageId: string }>();
@@ -173,12 +174,12 @@ export default function MessageDetailPage() {
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}
           </p>
         </div>
-        <div className="prose max-w-none text-neutral-900">
+        <div className="prose max-w-none text-neutral-900 [&_a]:break-words [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md">
           {htmlBody ? (
             <div className="mx-auto" dangerouslySetInnerHTML={{ __html: htmlBody }} />
           ) : (
-            <pre className="whitespace-pre-wrap text-sm text mx-auto">
-              {cloudAttachmentResult.content}
+            <pre className="mx-auto whitespace-pre-wrap break-words font-sans text-sm">
+              {linkify(cloudAttachmentResult.content)}
             </pre>
           )}
           {bodyDisplay.quotedContent.map((quotedContent) => (

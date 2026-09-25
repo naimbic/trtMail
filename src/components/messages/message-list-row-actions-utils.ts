@@ -57,6 +57,15 @@ export async function toggleMessageStar(messageId: string) {
 	return result;
 }
 
+export async function toggleMessagePin(messageId: string) {
+	const response = await authFetch(`/api/messages/${messageId}/pin`, { method: "POST" });
+	if (!response.ok) throw new Error("Unable to update message pin");
+	const result = (await response.json()) as { pinned: boolean };
+	// Pinned messages sort to the top, so refresh the list.
+	window.dispatchEvent(new Event("trtmail:messages-changed"));
+	return result;
+}
+
 export function dispatchMessageCountsDelta(detail: MessageCountsDelta) {
 	window.dispatchEvent(new CustomEvent<MessageCountsDelta>("trtmail:message-counts-delta", { detail }));
 }
