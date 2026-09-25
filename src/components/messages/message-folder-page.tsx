@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, Inbox, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Inbox, Pin, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +18,7 @@ import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import { setMessageDragData } from "@/lib/messages/drag-utils";
 import { BulkMessageToolbar } from "./bulk-message-toolbar";
 import { MessageListRowActions } from "./message-list-row-actions";
-import { dispatchMessageCountsDelta, toggleMessageStar } from "./message-list-row-actions-utils";
+import { dispatchMessageCountsDelta, toggleMessagePin, toggleMessageStar } from "./message-list-row-actions-utils";
 import { MessageNavigationProgress, useMessageNavigation } from "./message-navigation";
 import type { MessageFolderPageProps, MessageListRowProps } from "./types";
 import {
@@ -49,9 +49,11 @@ function MessageListRow({
 	const { openDraftComposer } = useCompose();
 	const [read, setRead] = useState(message.read);
 	const [starred, setStarred] = useState(message.starred);
+	const [pinned, setPinned] = useState(Boolean(message.pinned));
 	useEffect(() => setRead(message.read), [message.read]);
 	useEffect(() => setStarred(message.starred), [message.starred]);
-	const rowMessage = { ...message, read, starred };
+	useEffect(() => setPinned(Boolean(message.pinned)), [message.pinned]);
+	const rowMessage = { ...message, read, starred, pinned };
 	const unread = rowMessage.direction === "inbound" && !rowMessage.read;
 	const draggable = config.folder === "inbox" && message.direction === "inbound";
 	const party = getMessageParty(rowMessage, config.folder, currentAccountName);
@@ -74,7 +76,7 @@ function MessageListRow({
 	if (compact && config.folder !== "drafts") {
 		return (
 			<div
-				className={`group grid grid-cols-[20px_minmax(0,1fr)] gap-3 border-l-2 px-4 py-3 transition-colors ${
+				className={`group relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 border-l-2 px-4 py-3 transition-colors ${
 					active
 						? "border-l-blue-600 bg-blue-50"
 						: selected
@@ -114,6 +116,23 @@ function MessageListRow({
 						{preview}
 					</span>
 				</Link>
+				<div className="pointer-events-none absolute right-3 top-2 z-10 flex items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+					<Tooltip label={pinned ? "Unpin" : "Pin"}>
+						<Button type="button" variant="ghost" size="sm" aria-label={pinned ? "Unpin" : "Pin"} onClick={() => void toggleMessagePin(message.id).then((r) => setPinned(r.pinned))}>
+							<Pin className={`h-4 w-4 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
+						</Button>
+					</Tooltip>
+					<Tooltip label={starred ? "Unstar" : "Star"}>
+						<Button type="button" variant="ghost" size="sm" aria-label={starred ? "Unstar" : "Star"} onClick={() => void toggleMessageStar(message.id).then((r) => setStarred(r.starred))}>
+							<Star className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
+						</Button>
+					</Tooltip>
+					<Tooltip label="Delete">
+						<Button type="button" variant="ghost" size="sm" aria-label="Delete" onClick={() => void onMessageAction(message.id, "trash")}>
+							<Trash2 className="h-4 w-4" />
+						</Button>
+					</Tooltip>
+				</div>
 			</div>
 		);
 	}
