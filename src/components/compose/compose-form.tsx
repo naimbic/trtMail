@@ -19,6 +19,7 @@ import {
 	signatureBlockHtml,
 } from "./utils";
 import { RichEditor } from "./rich-editor";
+import { RecipientSelect } from "./recipient-select";
 
 function textToHtml(text: string): string {
 	if (!text) return "";
@@ -185,6 +186,10 @@ export function ComposeForm({
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (!to.trim()) {
+			setToast({ type: "error", message: "Add at least one recipient" });
+			return;
+		}
 		setLoading(true);
 		const res = await authFetch("/api/send", {
 			method: "POST",
@@ -309,15 +314,12 @@ export function ComposeForm({
 				</div>
 				<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 					<Label htmlFor={`${mode}-to`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">To</Label>
-					<Input
+					<RecipientSelect
 						id={`${mode}-to`}
 						value={to}
-						onChange={(event) => setTo(event.target.value)}
-						type="text"
-						placeholder='Recipients — separate several with commas'
-						required
+						onChange={setTo}
+						placeholder="Recipients — type an address, Enter to add"
 						disabled={loadingDraft}
-						className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 					/>
 					{!showCcBcc && (
 						<button
@@ -333,26 +335,22 @@ export function ComposeForm({
 					<>
 						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-cc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Cc</Label>
-							<Input
+							<RecipientSelect
 								id={`${mode}-cc`}
 								value={cc}
-								onChange={(event) => setCc(event.target.value)}
-								type="text"
-								placeholder="Cc — separate several with commas"
+								onChange={setCc}
+								placeholder="Cc"
 								disabled={loadingDraft}
-								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 							/>
 						</div>
 						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-bcc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Bcc</Label>
-							<Input
+							<RecipientSelect
 								id={`${mode}-bcc`}
 								value={bcc}
-								onChange={(event) => setBcc(event.target.value)}
-								type="text"
-								placeholder="Bcc — separate several with commas"
+								onChange={setBcc}
+								placeholder="Bcc"
 								disabled={loadingDraft}
-								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 							/>
 						</div>
 					</>
