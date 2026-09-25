@@ -24,14 +24,28 @@ export type SendEmailInput = {
 	attachments?: AttachmentContent[];
 };
 
+/** Clean a comma-separated recipient list: trim each address, drop blanks, re-join.
+ * nodemailer already treats "a@x, b@y" as multiple recipients — this just guards
+ * against stray whitespace / trailing commas so every address is delivered to. */
+function normalizeRecipientList(value: string | undefined | null): string {
+	return (value ?? "")
+		.split(",")
+		.map((entry) => entry.trim())
+		.filter(Boolean)
+		.join(", ");
+}
+
 export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Promise<{ messageId: string }> {
 	const db = getDb(env);
+	const to = normalizeRecipientList(input.to);
+	const cc = normalizeRecipientList(input.cc);
+	const bcc = normalizeRecipientList(input.bcc);
 	const sender = await getAuthorizedSenderAddress(env, input);
 	const attachments = input.attachments ?? [];
 	validateAttachments(attachments);
 	await upsertContactFromAddress(env, {
 		userId: input.userId,
-		address: input.to,
+		address: to.split(",")[0]?.trim() || to,
 		source: "outbound",
 	});
 	const messageId = newId("msg");
@@ -43,9 +57,9 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 		mailboxId: sender.mailboxId,
 		direction: "outbound",
 		fromAddr: sender.fromAddr,
-		toAddr: input.to,
-		ccAddr: input.cc || null,
-		bccAddr: input.bcc || null,
+		toAddr: to,
+		ccAddr: cc || null,
+		bccAddr: bcc || null,
 		subject: input.subject,
 		snippet,
 		textBody: input.text ?? null,
@@ -76,9 +90,9 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 	try {
 		const response = await env.EMAIL.send({
 			from: sender.fromAddr,
-			to: input.to,
-			...(input.cc ? { cc: input.cc } : {}),
-			...(input.bcc ? { bcc: input.bcc } : {}),
+			to,
+			...(cc ? { cc } : {}),
+			...(bcc ? { bcc } : {}),
 			subject: input.subject,
 			headers: input.headers,
 			html: input.html,
@@ -110,14 +124,14 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 		await dispatchWebhooks(env, input.userId, "message.outbound", {
 			messageId,
 			providerMessageId: response.messageId,
-			to: input.to,
+			to,
 		});
 		await createAuditLog(env, {
 			actorUserId: input.userId,
 			mailboxId: sender.mailboxId,
 			messageId,
 			action: "email.send",
-			metadata: { to: input.to, subject: input.subject },
+			metadata: { to, subject: input.subject },
 		});
 
 		return { messageId };

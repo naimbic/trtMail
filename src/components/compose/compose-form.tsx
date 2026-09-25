@@ -307,14 +307,14 @@ export function ComposeForm({
 						))}
 					</Select>
 				</div>
-				<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
-					<Label htmlFor={`${mode}-to`} className="sr-only">To</Label>
+				<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
+					<Label htmlFor={`${mode}-to`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">To</Label>
 					<Input
 						id={`${mode}-to`}
 						value={to}
 						onChange={(event) => setTo(event.target.value)}
 						type="text"
-						placeholder='Recipients, or "Maya Chen" <maya@example.com>'
+						placeholder='Recipients — separate several with commas'
 						required
 						disabled={loadingDraft}
 						className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
@@ -331,26 +331,26 @@ export function ComposeForm({
 				</div>
 				{showCcBcc && (
 					<>
-						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
+						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-cc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Cc</Label>
 							<Input
 								id={`${mode}-cc`}
 								value={cc}
 								onChange={(event) => setCc(event.target.value)}
 								type="text"
-								placeholder="Carbon-copy recipients"
+								placeholder="Cc — separate several with commas"
 								disabled={loadingDraft}
 								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 							/>
 						</div>
-						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1">
+						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-bcc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Bcc</Label>
 							<Input
 								id={`${mode}-bcc`}
 								value={bcc}
 								onChange={(event) => setBcc(event.target.value)}
 								type="text"
-								placeholder="Blind carbon-copy recipients"
+								placeholder="Bcc — separate several with commas"
 								disabled={loadingDraft}
 								className="h-8 flex-1 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 							/>
