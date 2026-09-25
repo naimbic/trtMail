@@ -36,15 +36,18 @@ type Toast = { type: "success" | "error"; message: string } | null;
 export function ComposeForm({
 	mode = "page",
 	draftIdToLoad,
+	initialTo = "",
 	onClose,
 }: {
 	mode?: "page" | "popup";
 	draftIdToLoad?: string | null;
+	initialTo?: string;
 	onClose?: () => void;
 }) {
 	const { selectedMailbox, setSelectedMailbox, mailboxes } = useSelectedMailbox();
 	const [draftId, setDraftId] = useState<string | null>(null);
-	const [to, setTo] = useState("");
+	const [to, setTo] = useState(initialTo);
+	const [contactSuggestions, setContactSuggestions] = useState<{ label: string; value: string }[]>([]);
 	const [cc, setCc] = useState("");
 	const [bcc, setBcc] = useState("");
 	const [showCcBcc, setShowCcBcc] = useState(false);
@@ -64,6 +67,25 @@ export function ComposeForm({
 	useEffect(() => {
 		if (!selectedMailbox && mailboxes.length === 1) setSelectedMailbox(mailboxes[0]);
 	}, [mailboxes, selectedMailbox, setSelectedMailbox]);
+
+	// Load saved contacts once for recipient autocomplete.
+	useEffect(() => {
+		let cancelled = false;
+		authFetch("/api/contacts/directory")
+			.then((res) => res.json() as Promise<{ contacts?: { email: string; displayName?: string | null }[] }>)
+			.then((data) => {
+				if (cancelled) return;
+				setContactSuggestions(
+					(data.contacts ?? [])
+						.filter((c) => c.email)
+						.map((c) => ({ label: c.displayName ? `${c.displayName} <${c.email}>` : c.email, value: c.email })),
+				);
+			})
+			.catch(() => {});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const senderAddresses = useMemo(() => {
 		if (!selectedMailbox) return [];
@@ -319,6 +341,7 @@ export function ComposeForm({
 						value={to}
 						onChange={setTo}
 						placeholder="Recipients — type an address, Enter to add"
+						suggestions={contactSuggestions}
 						disabled={loadingDraft}
 					/>
 					{!showCcBcc && (
@@ -340,6 +363,7 @@ export function ComposeForm({
 								value={cc}
 								onChange={setCc}
 								placeholder="Cc"
+						suggestions={contactSuggestions}
 								disabled={loadingDraft}
 							/>
 						</div>
@@ -350,6 +374,7 @@ export function ComposeForm({
 								value={bcc}
 								onChange={setBcc}
 								placeholder="Bcc"
+						suggestions={contactSuggestions}
 								disabled={loadingDraft}
 							/>
 						</div>

@@ -1,9 +1,112 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, like, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { contacts, routingRules } from "@/db/schema";
 import { normalizeEmailAddress } from "@/lib/email/address";
 import type { BlockContactInput, ContactInput, MessageContactNames } from "@/lib/contacts/types";
 import { getContactId, getContactNameFromAddress } from "@/lib/contacts/utils";
+
+// --- Directory (address book) CRUD -------------------------------------------
+
+export type ContactRecord = typeof contacts.$inferSelect;
+
+export type ContactFields = {
+	email: string;
+	displayName?: string | null;
+	company?: string | null;
+	phone?: string | null;
+};
+
+/** All of a user's contacts, optional case-insensitive search across name/email/company. */
+export async function listContacts(env: CloudflareEnv, userId: string, q?: string): Promise<ContactRecord[]> {
+	const db = getDb(env);
+	const conditions = [eq(contacts.userId, userId)];
+	const term = q?.trim();
+	if (term) {
+		const pattern = `%${term}%`;
+		const search = or(
+			like(contacts.displayName, pattern),
+			like(contacts.email, pattern),
+			like(contacts.company, pattern),
+		);
+		if (search) conditions.push(search);
+	}
+	return db.select().from(contacts).where(and(...conditions));
+}
+
+export async function getContactRecord(env: CloudflareEnv, userId: string, id: string): Promise<ContactRecord | null> {
+	const db = getDb(env);
+	const [row] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+	return row && row.userId === userId ? row : null;
+}
+
+/** Create a contact, or update the existing one with the same email (contact ids
+ * are derived from userId+email, matching the inbound/outbound upsert). */
+export async function createOrUpdateContact(env: CloudflareEnv, userId: string, fields: ContactFields): Promise<ContactRecord> {
+	const email = normalizeEmailAddress(fields.email);
+	if (!email) throw new Error("A valid email address is required");
+	const db = getDb(env);
+	const id = getContactId(userId, email);
+	const values = {
+		displayName: fields.displayName?.trim() || null,
+		company: fields.company?.trim() || null,
+		phone: fields.phone?.trim() || null,
+	};
+	const [existing] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+	if (existing && existing.userId === userId) {
+		await db.update(contacts).set({ ...values, source: "manual" }).where(eq(contacts.id, id));
+	} else {
+		await db.insert(contacts).values({
+			id,
+			userId,
+			email,
+			...values,
+			source: "manual",
+			lastSeenAt: new Date(),
+		});
+	}
+	const [row] = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+	return row;
+}
+
+export async function updateContactRecord(
+	env: CloudflareEnv,
+	userId: string,
+	id: string,
+	fields: Partial<Omit<ContactFields, "email">>,
+): Promise<ContactRecord | null> {
+	const db = getDb(env);
+	const existing = await getContactRecord(env, userId, id);
+	if (!existing) return null;
+	await db
+		.update(contacts)
+		.set({
+			...(fields.displayName !== undefined ? { displayName: fields.displayName?.trim() || null } : {}),
+			...(fields.company !== undefined ? { company: fields.company?.trim() || null } : {}),
+			...(fields.phone !== undefined ? { phone: fields.phone?.trim() || null } : {}),
+			source: "manual",
+		})
+		.where(eq(contacts.id, id));
+	return getContactRecord(env, userId, id);
+}
+
+export async function deleteContactsByIds(env: CloudflareEnv, userId: string, ids: string[]): Promise<{ deletedKeys: string[] }> {
+	if (ids.length === 0) return { deletedKeys: [] };
+	const db = getDb(env);
+	const rows = await db.select().from(contacts).where(inArray(contacts.id, ids));
+	const owned = rows.filter((row) => row.userId === userId);
+	const ownedIds = owned.map((row) => row.id);
+	if (ownedIds.length === 0) return { deletedKeys: [] };
+	await db.delete(contacts).where(inArray(contacts.id, ownedIds));
+	return { deletedKeys: owned.map((row) => row.avatarKey).filter((key): key is string => !!key) };
+}
+
+export async function setContactAvatarKey(env: CloudflareEnv, userId: string, id: string, avatarKey: string | null): Promise<ContactRecord | null> {
+	const db = getDb(env);
+	const existing = await getContactRecord(env, userId, id);
+	if (!existing) return null;
+	await db.update(contacts).set({ avatarKey }).where(eq(contacts.id, id));
+	return getContactRecord(env, userId, id);
+}
 
 export async function upsertContactFromAddress(env: CloudflareEnv, input: ContactInput) {
 	const email = normalizeEmailAddress(input.address);

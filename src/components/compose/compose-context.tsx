@@ -6,7 +6,9 @@ import type { ReactNode } from "react";
 type ComposeContextValue = {
 	open: boolean;
 	draftId: string | null;
+	initialTo: string;
 	openComposer: () => void;
+	openComposerWith: (to: string) => void;
 	openDraftComposer: (draftId: string) => void;
 	closeComposer: () => void;
 };
@@ -22,23 +24,33 @@ export function useCompose() {
 export function ComposeProvider({ children }: { children: ReactNode }) {
 	const [open, setOpen] = useState(false);
 	const [draftId, setDraftId] = useState<string | null>(null);
+	const [initialTo, setInitialTo] = useState("");
 
 	return (
 		<ComposeContext.Provider
 			value={{
 				open,
 				draftId,
+				initialTo,
 				openComposer: () => {
 					setDraftId(null);
+					setInitialTo("");
+					setOpen(true);
+				},
+				openComposerWith: (to) => {
+					setDraftId(null);
+					setInitialTo(to);
 					setOpen(true);
 				},
 				openDraftComposer: (nextDraftId) => {
 					setDraftId(nextDraftId);
+					setInitialTo("");
 					setOpen(true);
 				},
 				closeComposer: () => {
 					setOpen(false);
 					setDraftId(null);
+					setInitialTo("");
 				},
 			}}
 		>
