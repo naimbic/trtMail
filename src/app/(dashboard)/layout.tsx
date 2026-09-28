@@ -12,6 +12,7 @@ import { MailboxSelector } from "@/components/mailbox-selector";
 import { LicenseIndicator } from "@/components/license-indicator";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { SidebarProvider } from "@/components/sidebar-state";
+import { NotificationToaster } from "@/components/notification-toaster";
 
 export default function DashboardLayout({
   children,
@@ -46,6 +47,7 @@ export default function DashboardLayout({
                 </main>
               </div>
               <FloatingComposer />
+              <NotificationToaster />
             </div>
           </MailSearchProvider>
         </ComposeProvider>

@@ -92,6 +92,13 @@ export async function processInboundMessage(
 			rawR2Key: payload.rawR2Key,
 			status: destination.status,
 			threadId: parsed.messageId,
+			// Use the email's real Date header as the received time (shown in the
+			// viewer's local timezone) rather than the poller's ingest time. Guard
+			// against missing / absurdly-future dates (bad sender clocks).
+			createdAt:
+				parsed.date && parsed.date.getTime() <= Date.now() + 5 * 60_000
+					? parsed.date
+					: new Date(),
 		});
 
 		await storeMessageAttachments(env, messageId, parsed.attachments, { validate: false });

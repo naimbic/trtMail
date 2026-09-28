@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MessageCounts, MessageCountsDelta } from "./types";
 import { clearMessageCountsCache, fetchMessageCounts } from "./utils";
 
@@ -20,6 +20,9 @@ const emptyCounts: MessageCounts = {
 export function useMessageCounts(mailboxId?: string | null, enabled = true) {
 	const [counts, setCounts] = useState<MessageCounts>(emptyCounts);
 	const [isLoading, setIsLoading] = useState(enabled);
+	// Track the last server-confirmed inbox unread count to detect new mail arriving
+	// between polls (self-hosted has no realtime push — detection is poll-based).
+	const prevUnread = useRef<number | null>(null);
 
 	useEffect(() => {
 		if (!enabled) {
@@ -28,12 +31,23 @@ export function useMessageCounts(mailboxId?: string | null, enabled = true) {
 		}
 
 		let cancelled = false;
+		prevUnread.current = null; // reset baseline when the mailbox changes
 
 		async function loadCounts(force = false) {
 			setIsLoading(true);
 			try {
 				const nextCounts = await fetchMessageCounts(mailboxId, force);
-				if (!cancelled) setCounts(nextCounts ?? emptyCounts);
+				if (!cancelled) {
+					const unread = nextCounts?.folders.inbox.unread ?? 0;
+					// Fire once per real increase (skip the first load, which sets the baseline).
+					if (prevUnread.current !== null && unread > prevUnread.current) {
+						window.dispatchEvent(
+							new CustomEvent("trtmail:new-mail", { detail: { count: unread - prevUnread.current } }),
+						);
+					}
+					prevUnread.current = unread;
+					setCounts(nextCounts ?? emptyCounts);
+				}
 			} finally {
 				if (!cancelled) setIsLoading(false);
 			}
@@ -62,7 +76,7 @@ export function useMessageCounts(mailboxId?: string | null, enabled = true) {
 		window.addEventListener("trtmail:messages-changed", onMessagesChanged);
 		window.addEventListener("trtmail:message-counts-changed", onMessagesChanged);
 		window.addEventListener("trtmail:message-counts-delta", onMessageCountsDelta);
-		const refreshInterval = window.setInterval(() => void loadCounts(true), 15_000);
+		const refreshInterval = window.setInterval(() => void loadCounts(true), 10_000);
 
 		return () => {
 			cancelled = true;
