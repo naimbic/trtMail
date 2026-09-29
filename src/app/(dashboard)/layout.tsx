@@ -15,6 +15,7 @@ import { SidebarProvider } from "@/components/sidebar-state";
 import { NotificationToaster } from "@/components/notification-toaster";
 import { TabTitleBadge } from "@/components/tab-title-badge";
 import { UndoSnackbar } from "@/components/undo-snackbar";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 
 export default function DashboardLayout({
   children,
@@ -52,6 +53,7 @@ export default function DashboardLayout({
               <NotificationToaster />
               <UndoSnackbar />
               <TabTitleBadge />
+              <KeyboardShortcuts />
             </div>
           </MailSearchProvider>
         </ComposeProvider>
