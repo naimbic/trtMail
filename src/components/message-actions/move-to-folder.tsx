@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FolderInput } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -23,19 +23,42 @@ export function MoveToFolder({
 	const [folders, setFolders] = useState<Folder[] | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const wrapRef = useRef<HTMLDivElement | null>(null);
 
-	async function toggle() {
+	// Close on outside click / Escape.
+	useEffect(() => {
+		if (!open) return;
+		function onDocClick(e: MouseEvent) {
+			if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+		}
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") setOpen(false);
+		}
+		document.addEventListener("mousedown", onDocClick);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onDocClick);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [open]);
+
+	async function loadFolders() {
+		if (!mailboxId) return;
+		setFolders(null);
+		setError(null);
+		try {
+			const res = await authFetch(`/api/folders?mailboxId=${encodeURIComponent(mailboxId)}`);
+			const data = (await res.json()) as { folders?: Folder[] };
+			setFolders(data.folders ?? []);
+		} catch {
+			setFolders([]);
+		}
+	}
+
+	function toggle() {
 		const next = !open;
 		setOpen(next);
-		if (next && folders === null && mailboxId) {
-			try {
-				const res = await authFetch(`/api/folders?mailboxId=${encodeURIComponent(mailboxId)}`);
-				const data = (await res.json()) as { folders?: Folder[] };
-				setFolders(data.folders ?? []);
-			} catch {
-				setFolders([]);
-			}
-		}
+		if (next) void loadFolders(); // refetch each open so new folders show
 	}
 
 	async function move(folderId: string) {
@@ -61,17 +84,19 @@ export function MoveToFolder({
 	if (!mailboxId) return null;
 
 	return (
-		<div className="relative">
+		<div className="relative" ref={wrapRef}>
 			<Tooltip label="Move to folder">
-				<Button type="button" variant="ghost" size="sm" aria-label="Move to folder" onClick={() => void toggle()}>
+				<Button type="button" variant="ghost" size="sm" aria-label="Move to folder" onClick={toggle}>
 					<FolderInput className="h-5 w-5" />
 				</Button>
 			</Tooltip>
 			{open && (
-				<div className="absolute right-0 z-20 mt-2 w-56 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
+				<div className="absolute right-0 z-50 mt-2 max-h-72 w-56 overflow-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
 					<p className="px-3 pb-1 pt-1 text-sm font-medium text-neutral-500">Move to folder</p>
 					{folders === null && <p className="px-3 py-2 text-sm text-neutral-400">Loading…</p>}
-					{folders?.length === 0 && <p className="px-3 py-2 text-sm text-neutral-400">No folders yet</p>}
+					{folders?.length === 0 && (
+						<p className="px-3 py-2 text-sm text-neutral-400">No folders in this mailbox yet — create one in the sidebar.</p>
+					)}
 					{folders?.map((folder) => (
 						<button
 							key={folder.id}
