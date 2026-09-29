@@ -13,7 +13,7 @@ export function MailSearchInput() {
 			<Input
 				value={query}
 				onChange={(event) => setQuery(event.target.value)}
-				placeholder='Search mail'
+				placeholder='Search mail — try from: subject: has:attachment is:unread'
 				className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-neutral-800 outline-none! shadow-none! border-none! placeholder:text-neutral-500"
 			/>
 			{query && (

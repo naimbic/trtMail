@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { eq, desc, and, like, or, count, isNull, inArray, lte, gt } from "drizzle-orm";
+import { eq, desc, and, like, or, count, isNull, inArray, lte, gt, gte, exists } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { getEnv } from "@/lib/cloudflare";
 import { getCurrentUser } from "@/lib/auth/cookies";
 import { getDb } from "@/db";
-import { messages } from "@/db/schema";
+import { messages, messageAttachments } from "@/db/schema";
 import { getContactDisplayNameMap } from "@/lib/contacts/service";
 import { normalizeEmailAddress } from "@/lib/email/address";
 import { buildSnippet } from "@/lib/email/parse";
@@ -73,14 +73,46 @@ export async function GET(request: Request) {
 		conditions.push(eq(messages.read, false));
 	}
 	if (query) {
-		const pattern = `%${query}%`;
-		const queryCondition = or(
-			like(messages.fromAddr, pattern),
-			like(messages.toAddr, pattern),
-			like(messages.subject, pattern),
-			like(messages.snippet, pattern),
-		);
-		if (queryCondition) conditions.push(queryCondition);
+		// Gmail-style operators: from: to: subject: has:attachment is:unread|read|starred
+		// before:YYYY-MM-DD after:YYYY-MM-DD  — anything left over is a broad text match.
+		const ops: Array<{ k: string; v: string }> = [];
+		const freeText = query
+			.replace(/(\w+):(?:"([^"]*)"|(\S+))/g, (_m, k: string, quoted?: string, bare?: string) => {
+				ops.push({ k: k.toLowerCase(), v: (quoted ?? bare ?? "").trim() });
+				return " ";
+			})
+			.trim();
+
+		for (const { k, v } of ops) {
+			if (!v && k !== "has" && k !== "is") continue;
+			const p = `%${v}%`;
+			if (k === "from") conditions.push(like(messages.fromAddr, p));
+			else if (k === "to") conditions.push(like(messages.toAddr, p));
+			else if (k === "cc") conditions.push(like(messages.ccAddr, p));
+			else if (k === "subject") conditions.push(like(messages.subject, p));
+			else if (k === "has" && v === "attachment")
+				conditions.push(
+					exists(db.select({ x: messageAttachments.id }).from(messageAttachments).where(eq(messageAttachments.messageId, messages.id))),
+				);
+			else if (k === "is" && v === "unread") conditions.push(eq(messages.read, false));
+			else if (k === "is" && v === "read") conditions.push(eq(messages.read, true));
+			else if (k === "is" && v === "starred") conditions.push(eq(messages.starred, true));
+			else if ((k === "after" || k === "since") && !Number.isNaN(Date.parse(v)))
+				conditions.push(gte(messages.createdAt, new Date(v)));
+			else if ((k === "before" || k === "until") && !Number.isNaN(Date.parse(v)))
+				conditions.push(lte(messages.createdAt, new Date(v)));
+		}
+
+		if (freeText) {
+			const pattern = `%${freeText}%`;
+			const queryCondition = or(
+				like(messages.fromAddr, pattern),
+				like(messages.toAddr, pattern),
+				like(messages.subject, pattern),
+				like(messages.snippet, pattern),
+			);
+			if (queryCondition) conditions.push(queryCondition);
+		}
 	}
 	if (title) {
 		conditions.push(like(messages.subject, `%${title}%`));
