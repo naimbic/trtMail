@@ -145,6 +145,14 @@ export function DashboardNav({ className }: { className?: string }) {
     };
   }, [selectedMailbox?.id]);
 
+  async function deleteFolder(folderId: string, name: string) {
+    if (!window.confirm(`Delete the folder “${name}”? Messages inside it stay in your mail.`)) return;
+    const response = await authFetch(`/api/folders/${folderId}`, { method: "DELETE" });
+    if (!response.ok) return;
+    setFolders((items) => items.filter((folder) => folder.id !== folderId));
+    if (window.location.pathname.startsWith(`/folders/${folderId}`)) window.location.assign("/inbox");
+  }
+
   async function createFolder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedMailbox?.id || !newFolderName.trim()) return;
@@ -257,19 +265,31 @@ export function DashboardNav({ className }: { className?: string }) {
         </div>
       )}
       {folders.map((folder) => (
-        <NavItem
-          key={folder.id}
-          link={{
-            href: `/folders/${folder.id}`,
-            label: folder.name,
-            icon: Folder,
-            preloadMessages: true,
-            iconColor: folder.color,
-            count: counts.customFolders[folder.id]?.unread,
-            onMessageDrop: (messageIds: string[]) =>
-              void moveMessagesToCustomFolder(messageIds, folder.id),
-          }}
-        />
+        <div key={folder.id} className="group/folder relative">
+          <NavItem
+            link={{
+              href: `/folders/${folder.id}`,
+              label: folder.name,
+              icon: Folder,
+              preloadMessages: true,
+              iconColor: folder.color,
+              count: counts.customFolders[folder.id]?.unread,
+              onMessageDrop: (messageIds: string[]) =>
+                void moveMessagesToCustomFolder(messageIds, folder.id),
+            }}
+          />
+          {!minimal && (
+            <button
+              type="button"
+              onClick={() => void deleteFolder(folder.id, folder.name)}
+              aria-label={`Delete folder ${folder.name}`}
+              title="Delete folder"
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover/folder:opacity-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       ))}
       <span className="flex-1" />
       <div className="mt-6 space-y-1 border-t border-slate-200 pt-4">{!minimal && <p className="mail-nav-heading">WORKSPACE</p>}<NavItem link={{href:"/contacts",label:"Contacts",icon:Contact}}/><NavItem link={{href:"/reminders",label:"Reminders",icon:BellRing}}/><NavItem link={{href:"/calendar",label:"Calendar",icon:CalendarDays}}/><NavItem link={{href:"/settings",label:"Settings",icon:Settings}}/></div>

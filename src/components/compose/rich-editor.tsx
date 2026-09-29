@@ -59,6 +59,9 @@ export function RichEditor({
 	placeholder?: string;
 }) {
 	const ref = useRef<HTMLDivElement | null>(null);
+	// Last caret/selection inside the editor. A native <select> steals focus and
+	// collapses the selection, so we snapshot it and restore before applying a command.
+	const savedRange = useRef<Range | null>(null);
 	const [colorOpen, setColorOpen] = useState<"text" | "mark" | null>(null);
 
 	useEffect(() => {
@@ -77,10 +80,38 @@ export function RichEditor({
 		if (el) onChange(el.innerHTML, el.innerText);
 	}
 
+	function saveSelection() {
+		const el = ref.current;
+		const sel = window.getSelection();
+		if (!el || !sel || sel.rangeCount === 0) return;
+		const range = sel.getRangeAt(0);
+		if (el.contains(range.commonAncestorContainer)) savedRange.current = range.cloneRange();
+	}
+
+	function restoreSelection() {
+		const el = ref.current;
+		const range = savedRange.current;
+		if (!el || !range) return;
+		const sel = window.getSelection();
+		if (!sel) return;
+		sel.removeAllRanges();
+		sel.addRange(range);
+	}
+
 	function exec(command: string, value?: string) {
 		ref.current?.focus();
 		document.execCommand(command, false, value);
 		emit();
+	}
+
+	// For controls that lose the selection when clicked (the font/size <select>s):
+	// refocus the editor, restore the snapshot, then apply.
+	function applySelectionCommand(command: string, value: string) {
+		ref.current?.focus();
+		restoreSelection();
+		document.execCommand(command, false, value);
+		emit();
+		saveSelection();
 	}
 
 	function toggleBlock(tag: string) {
@@ -104,9 +135,10 @@ export function RichEditor({
 					title="Font"
 					aria-label="Font family"
 					disabled={disabled}
-					onMouseDown={(e) => e.preventDefault()}
-					defaultValue=""
-					onChange={(e) => { const v = e.target.value; if (v) exec("fontName", v); e.currentTarget.selectedIndex = 0; }}
+					onMouseDown={saveSelection}
+					onFocus={saveSelection}
+					value=""
+					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontName", v); e.currentTarget.selectedIndex = 0; }}
 					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
 				>
 					<option value="" disabled>Font</option>
@@ -116,9 +148,10 @@ export function RichEditor({
 					title="Font size"
 					aria-label="Font size"
 					disabled={disabled}
-					onMouseDown={(e) => e.preventDefault()}
-					defaultValue=""
-					onChange={(e) => { const v = e.target.value; if (v) exec("fontSize", v); e.currentTarget.selectedIndex = 0; }}
+					onMouseDown={saveSelection}
+					onFocus={saveSelection}
+					value=""
+					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontSize", v); e.currentTarget.selectedIndex = 0; }}
 					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
 				>
 					<option value="" disabled>Size</option>
@@ -171,8 +204,10 @@ export function RichEditor({
 				ref={ref}
 				contentEditable={!disabled}
 				suppressContentEditableWarning
-				onInput={emit}
-				onBlur={() => setColorOpen(null)}
+				onInput={() => { emit(); saveSelection(); }}
+				onKeyUp={saveSelection}
+				onMouseUp={saveSelection}
+				onBlur={() => { setColorOpen(null); saveSelection(); }}
 				role="textbox"
 				aria-multiline="true"
 				data-placeholder={placeholder}
