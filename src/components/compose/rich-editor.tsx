@@ -63,6 +63,9 @@ export function RichEditor({
 	// collapses the selection, so we snapshot it and restore before applying a command.
 	const savedRange = useRef<Range | null>(null);
 	const [colorOpen, setColorOpen] = useState<"text" | "mark" | null>(null);
+	// Toolbar reflects the current selection's font family + size.
+	const [curFont, setCurFont] = useState("");
+	const [curSize, setCurSize] = useState("");
 
 	useEffect(() => {
 		const el = ref.current;
@@ -86,6 +89,24 @@ export function RichEditor({
 		if (!el || !sel || sel.rangeCount === 0) return;
 		const range = sel.getRangeAt(0);
 		if (el.contains(range.commonAncestorContainer)) savedRange.current = range.cloneRange();
+	}
+
+	// Reflect the caret's current font/size in the toolbar dropdowns.
+	function syncToolbarState() {
+		try {
+			const rawFont = document.queryCommandValue("fontName").toLowerCase().replace(/["']/g, "");
+			const font = FONTS.find((f) => rawFont.includes(f.value.split(",")[0].trim().toLowerCase()));
+			setCurFont(font?.value ?? "");
+			const size = document.queryCommandValue("fontSize");
+			setCurSize(FONT_SIZES.some((s) => s.value === size) ? size : "");
+		} catch {
+			/* queryCommandValue unavailable — leave as-is */
+		}
+	}
+
+	function onEditorSelect() {
+		saveSelection();
+		syncToolbarState();
 	}
 
 	function restoreSelection() {
@@ -112,6 +133,7 @@ export function RichEditor({
 		document.execCommand(command, false, value);
 		emit();
 		saveSelection();
+		syncToolbarState();
 	}
 
 	function toggleBlock(tag: string) {
@@ -137,8 +159,8 @@ export function RichEditor({
 					disabled={disabled}
 					onMouseDown={saveSelection}
 					onFocus={saveSelection}
-					value=""
-					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontName", v); e.currentTarget.selectedIndex = 0; }}
+					value={curFont}
+					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontName", v); }}
 					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
 				>
 					<option value="" disabled>Font</option>
@@ -150,8 +172,8 @@ export function RichEditor({
 					disabled={disabled}
 					onMouseDown={saveSelection}
 					onFocus={saveSelection}
-					value=""
-					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontSize", v); e.currentTarget.selectedIndex = 0; }}
+					value={curSize}
+					onChange={(e) => { const v = e.target.value; if (v) applySelectionCommand("fontSize", v); }}
 					className="h-8 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 disabled:opacity-40"
 				>
 					<option value="" disabled>Size</option>
@@ -204,9 +226,9 @@ export function RichEditor({
 				ref={ref}
 				contentEditable={!disabled}
 				suppressContentEditableWarning
-				onInput={() => { emit(); saveSelection(); }}
-				onKeyUp={saveSelection}
-				onMouseUp={saveSelection}
+				onInput={() => { emit(); onEditorSelect(); }}
+				onKeyUp={onEditorSelect}
+				onMouseUp={onEditorSelect}
 				onBlur={() => { setColorOpen(null); saveSelection(); }}
 				role="textbox"
 				aria-multiline="true"
