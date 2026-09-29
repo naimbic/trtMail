@@ -16,6 +16,7 @@ import { useMessageCounts } from "@/hooks/use-message-counts";
 import { useMessages } from "@/hooks/use-messages";
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import { setMessageDragData } from "@/lib/messages/drag-utils";
+import { emitUndo, moveMessagesToInbox } from "@/lib/messages/undo";
 import { BulkMessageToolbar } from "./bulk-message-toolbar";
 import { MessageListRowActions } from "./message-list-row-actions";
 import { dispatchMessageCountsDelta, toggleMessagePin, toggleMessageStar } from "./message-list-row-actions-utils";
@@ -128,7 +129,7 @@ function MessageListRow({
 						</Button>
 					</Tooltip>
 					<Tooltip label="Delete">
-						<Button type="button" variant="ghost" size="sm" aria-label="Delete" onClick={() => void onMessageAction(message.id, "trash")}>
+						<Button type="button" variant="ghost" size="sm" aria-label="Delete" onClick={() => void onMessageAction(message.id, "trash").then(() => emitUndo("Message moved to Trash", () => moveMessagesToInbox([message.id])))}>
 							<Trash2 className="h-4 w-4" />
 						</Button>
 					</Tooltip>
@@ -229,6 +230,11 @@ function MessageListRow({
 						if (unreadDelta) dispatchMessageCountsDelta({ inboxUnreadDelta: unreadDelta });
 						try {
 							await onMessageAction(message.id, action);
+							if (action === "archive" || action === "trash") {
+								emitUndo(action === "archive" ? "Message archived" : "Message moved to Trash", () =>
+									moveMessagesToInbox([message.id]),
+								);
+							}
 						} catch (error) {
 							if (action === "read" || action === "unread") {
 								setRead(previousRead);

@@ -13,6 +13,8 @@ import { LicenseIndicator } from "@/components/license-indicator";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { SidebarProvider } from "@/components/sidebar-state";
 import { NotificationToaster } from "@/components/notification-toaster";
+import { TabTitleBadge } from "@/components/tab-title-badge";
+import { UndoSnackbar } from "@/components/undo-snackbar";
 
 export default function DashboardLayout({
   children,
@@ -48,6 +50,8 @@ export default function DashboardLayout({
               </div>
               <FloatingComposer />
               <NotificationToaster />
+              <UndoSnackbar />
+              <TabTitleBadge />
             </div>
           </MailSearchProvider>
         </ComposeProvider>

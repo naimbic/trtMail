@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Mail, X } from "lucide-react";
+import { isDesktopEnabled, isSoundEnabled } from "@/lib/notification-prefs";
 
 /**
  * New-mail toast + sound. Listens for the `trtmail:new-mail` event (dispatched by
@@ -12,19 +13,9 @@ import { Mail, X } from "lucide-react";
 
 type Toast = { id: number; title: string; body?: string };
 
-const SOUND_KEY = "trtmail:sound";
-
-function soundEnabled(): boolean {
-	try {
-		return localStorage.getItem(SOUND_KEY) !== "off";
-	} catch {
-		return true;
-	}
-}
-
 // Soft two-note "ding" via WebAudio — no audio asset to ship.
 function playDing() {
-	if (!soundEnabled()) return;
+	if (!isSoundEnabled()) return;
 	try {
 		const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 		if (!AC) return;
@@ -60,15 +51,6 @@ export function NotificationToaster() {
 	const idRef = useRef(0);
 
 	useEffect(() => {
-		// Ask once for OS notification permission (used only when the tab is hidden).
-		try {
-			if (typeof Notification !== "undefined" && Notification.permission === "default") {
-				void Notification.requestPermission().catch(() => {});
-			}
-		} catch {
-			/* no-op */
-		}
-
 		function onNewMail(event: Event) {
 			const now = Date.now();
 			if (now - lastFired.current < 2000) return; // de-dupe multiple hook instances
@@ -84,6 +66,7 @@ export function NotificationToaster() {
 
 			try {
 				if (
+					isDesktopEnabled() &&
 					typeof Notification !== "undefined" &&
 					Notification.permission === "granted" &&
 					document.visibilityState !== "visible"

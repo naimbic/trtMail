@@ -7,6 +7,13 @@ import { useCompose } from "@/components/compose/compose-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { MoveToFolder } from "./move-to-folder";
+import { emitUndo, moveMessagesToInbox } from "@/lib/messages/undo";
+
+const UNDO_LABELS: Partial<Record<BulkMessageAction, string>> = {
+	archive: "Message archived",
+	trash: "Message moved to Trash",
+	spam: "Message reported as spam",
+};
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import type { MessageActionsProps } from "./types";
 import {
@@ -49,6 +56,8 @@ export function MessageActions({
 		setError(null);
 		try {
 			await runSingleMessageAction(messageId, action);
+			const label = UNDO_LABELS[action];
+			if (label) emitUndo(label, () => moveMessagesToInbox([messageId]));
 			const redirect = getMessageActionRedirect(action, direction);
 			if (redirect) router.push(redirect);
 			router.refresh();
