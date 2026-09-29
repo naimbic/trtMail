@@ -62,11 +62,11 @@ export function formatEmailPageTitle({ location, total, unread, emailAddress }: 
 	return `${location} (${count})${suffix}`;
 }
 
-export async function runBulkMessageAction(messageIds: string[], action: string, notify = true) {
+export async function runBulkMessageAction(messageIds: string[], action: string, notify = true, folderId?: string) {
 	const response = await authFetch("/api/messages/bulk", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ messageIds, action }),
+		body: JSON.stringify({ messageIds, action, ...(folderId ? { folderId } : {}) }),
 	});
 
 	if (!response.ok) throw new Error("Unable to update selected messages");

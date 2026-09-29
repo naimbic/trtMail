@@ -389,6 +389,17 @@ export function MessageFolderPage({
 		}
 	}
 
+	async function runSelectedFolderMove(folderId: string) {
+		if (selectedIds.length === 0) return;
+		setPendingBulkAction(true);
+		try {
+			await runBulkMessageAction(selectedIds, "folder", true, folderId);
+			setSelectedMessages([]);
+		} finally {
+			setPendingBulkAction(false);
+		}
+	}
+
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className={`flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 ${compact ? "px-4" : "px-6"}`}>
@@ -407,6 +418,7 @@ export function MessageFolderPage({
 							selectedCount={selectedIds.length}
 							hasUnreadSelection={hasUnreadSelection}
 							onAction={runSelectedAction}
+							onMoveToFolder={runSelectedFolderMove}
 							onClearSelection={() => setSelectedMessages([])}
 							pending={pendingBulkAction}
 						/>

@@ -29,6 +29,17 @@ export function BulkMessageSelectionPane({
 		}
 	}
 
+	async function moveToFolder(folderId: string) {
+		if (selectedMessages.length === 0) return;
+		setPending(true);
+		try {
+			await runBulkMessageAction(selectedMessages.map((message) => message.id), "folder", true, folderId);
+			onClearSelection();
+		} finally {
+			setPending(false);
+		}
+	}
+
 	return (
 		<div className="flex h-full items-center justify-center p-8">
 			<div className="w-full max-w-xl text-center">
@@ -46,6 +57,7 @@ export function BulkMessageSelectionPane({
 						selectedCount={selectedMessages.length}
 						hasUnreadSelection={hasUnreadSelection}
 						onAction={runAction}
+						onMoveToFolder={moveToFolder}
 						onClearSelection={onClearSelection}
 						pending={pending}
 						hideSelectedCount

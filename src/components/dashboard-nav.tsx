@@ -13,6 +13,7 @@ import {
   Folder,
   Inbox,
   SquarePen,
+  Pencil,
   Plus,
   Send,
   ShieldAlert,
@@ -144,6 +145,20 @@ export function DashboardNav({ className }: { className?: string }) {
       cancelled = true;
     };
   }, [selectedMailbox?.id]);
+
+  async function renameFolder(folderId: string, currentName: string) {
+    const name = window.prompt("Rename folder", currentName)?.trim();
+    if (!name || name === currentName) return;
+    const response = await authFetch(`/api/folders/${folderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) return;
+    setFolders((items) =>
+      items.map((folder) => (folder.id === folderId ? { ...folder, name } : folder)).sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  }
 
   async function deleteFolder(folderId: string, name: string) {
     if (!window.confirm(`Delete the folder “${name}”? Messages inside it stay in your mail.`)) return;
@@ -279,15 +294,26 @@ export function DashboardNav({ className }: { className?: string }) {
             }}
           />
           {!minimal && (
-            <button
-              type="button"
-              onClick={() => void deleteFolder(folder.id, folder.name)}
-              aria-label={`Delete folder ${folder.name}`}
-              title="Delete folder"
-              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 group-hover/folder:opacity-100"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover/folder:opacity-100">
+              <button
+                type="button"
+                onClick={() => void renameFolder(folder.id, folder.name)}
+                aria-label={`Rename folder ${folder.name}`}
+                title="Rename folder"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-neutral-400 hover:bg-blue-50 hover:text-blue-600"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteFolder(folder.id, folder.name)}
+                aria-label={`Delete folder ${folder.name}`}
+                title="Delete folder"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           )}
         </div>
       ))}

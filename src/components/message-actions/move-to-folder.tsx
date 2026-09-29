@@ -25,7 +25,8 @@ export function MoveToFolder({
 	const [error, setError] = useState<string | null>(null);
 	const wrapRef = useRef<HTMLDivElement | null>(null);
 
-	// Close on outside click / Escape.
+	// Close on outside click / Escape. Attach on the NEXT tick so the same click
+	// that opened the menu doesn't immediately close it (open-and-close-instantly).
 	useEffect(() => {
 		if (!open) return;
 		function onDocClick(e: MouseEvent) {
@@ -34,9 +35,12 @@ export function MoveToFolder({
 		function onKey(e: KeyboardEvent) {
 			if (e.key === "Escape") setOpen(false);
 		}
-		document.addEventListener("mousedown", onDocClick);
-		document.addEventListener("keydown", onKey);
+		const id = window.setTimeout(() => {
+			document.addEventListener("mousedown", onDocClick);
+			document.addEventListener("keydown", onKey);
+		}, 0);
 		return () => {
+			window.clearTimeout(id);
 			document.removeEventListener("mousedown", onDocClick);
 			document.removeEventListener("keydown", onKey);
 		};
