@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import {
+	getUndoSendSeconds,
 	isDesktopEnabled,
 	isSoundEnabled,
 	setDesktopEnabled,
 	setSoundEnabled,
+	setUndoSendSeconds,
 } from "@/lib/notification-prefs";
 
 function Toggle({
@@ -40,11 +42,13 @@ function Toggle({
 export function NotificationSettingsForm() {
 	const [sound, setSound] = useState(true);
 	const [desktop, setDesktop] = useState(false);
+	const [undoSecs, setUndoSecs] = useState(5);
 	const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
 
 	useEffect(() => {
 		setSound(isSoundEnabled());
 		setDesktop(isDesktopEnabled());
+		setUndoSecs(getUndoSendSeconds());
 		try {
 			setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
 		} catch {
@@ -107,6 +111,29 @@ export function NotificationSettingsForm() {
 					onChange={onDesktop}
 					disabled={permission === "unsupported" || permissionDenied}
 				/>
+			</div>
+
+			<div className="flex items-start justify-between gap-6 border-t border-neutral-100 pt-6">
+				<div>
+					<p className="text-sm font-medium text-neutral-900">Undo send</p>
+					<p className="mt-0.5 text-sm text-neutral-500">
+						Hold outgoing mail briefly so you can cancel after hitting Send.
+					</p>
+				</div>
+				<select
+					value={undoSecs}
+					onChange={(e) => {
+						const v = Number(e.target.value);
+						setUndoSecs(v);
+						setUndoSendSeconds(v);
+					}}
+					className="h-9 rounded-lg border border-neutral-200 bg-white px-2 text-sm text-neutral-700"
+				>
+					<option value={0}>Off</option>
+					<option value={5}>5 seconds</option>
+					<option value={10}>10 seconds</option>
+					<option value={20}>20 seconds</option>
+				</select>
 			</div>
 		</div>
 	);

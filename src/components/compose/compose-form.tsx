@@ -20,6 +20,7 @@ import {
 } from "./utils";
 import { RichEditor } from "./rich-editor";
 import { RecipientSelect } from "./recipient-select";
+import { getUndoSendSeconds } from "@/lib/notification-prefs";
 
 function textToHtml(text: string): string {
 	if (!text) return "";
@@ -58,6 +59,12 @@ export function ComposeForm({
 	const [toast, setToast] = useState<Toast>(null);
 	const [loading, setLoading] = useState(false);
 	const [loadingDraft, setLoadingDraft] = useState(false);
+	// Undo-send: after clicking Send we hold for a few seconds with a countdown +
+	// "Undo" before the message actually goes out. Content stays in the composer
+	// (and keeps autosaving as a draft), so nothing is lost if the hold is cancelled.
+	const [holdSecs, setHoldSecs] = useState<number | null>(null);
+	const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const holdTick = useRef<ReturnType<typeof setInterval> | null>(null);
 	const [loadedDraftMailboxId, setLoadedDraftMailboxId] = useState<string | null>(null);
 	const [loadedDraftFrom, setLoadedDraftFrom] = useState<string | null>(null);
 	const [selectedFrom, setSelectedFrom] = useState("");
@@ -206,52 +213,66 @@ export function ComposeForm({
 		};
 	}, [bcc, cc, draftId, fromAddr, html, loadingDraft, selectedMailbox?.id, selectedMailbox?.signature, subject, text, to]);
 
-	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+	function cancelHold() {
+		if (holdTimer.current) clearTimeout(holdTimer.current);
+		if (holdTick.current) clearInterval(holdTick.current);
+		holdTimer.current = null;
+		holdTick.current = null;
+		setHoldSecs(null);
+	}
+
+	async function doSend() {
+		cancelHold();
+		setLoading(true);
+		try {
+			const res = await authFetch("/api/send", {
+				method: "POST",
+				body: buildSendFormData({ attachments, from: fromAddr, to, cc, bcc, subject, text, html, mailboxId: selectedMailbox?.id }),
+			});
+			const data = (await res.json()) as { messageId?: string; error?: string };
+			if (!res.ok) {
+				setToast({ type: "error", message: data.error ?? "Send failed" });
+				return;
+			}
+			if (draftId) {
+				void authFetch(`/api/drafts/${draftId}`, { method: "DELETE" }).finally(() => {
+					window.dispatchEvent(new Event("trtmail:messages-changed"));
+				});
+			}
+			setDraftId(null);
+			setTo("");
+			setCc("");
+			setBcc("");
+			setShowCcBcc(false);
+			setSubject("");
+			setText("");
+			setHtml(signatureBlockHtml(selectedMailbox?.signature));
+			setAttachments([]);
+			setToast({ type: "success", message: "Message sent" });
+			window.dispatchEvent(new Event("trtmail:messages-changed"));
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (!to.trim()) {
 			setToast({ type: "error", message: "Add at least one recipient" });
 			return;
 		}
-		setLoading(true);
-		const res = await authFetch("/api/send", {
-			method: "POST",
-			body: buildSendFormData({
-				attachments,
-				from: fromAddr,
-				to,
-				cc,
-				bcc,
-				subject,
-				text,
-				html,
-				mailboxId: selectedMailbox?.id,
-			}),
-		});
-		const data = (await res.json()) as { messageId?: string; error?: string };
-		setLoading(false);
-
-		if (!res.ok) {
-			setToast({ type: "error", message: data.error ?? "Send failed" });
+		const secs = getUndoSendSeconds();
+		if (secs <= 0) {
+			void doSend();
 			return;
 		}
-
-		if (draftId) {
-			void authFetch(`/api/drafts/${draftId}`, { method: "DELETE" }).finally(() => {
-				window.dispatchEvent(new Event("trtmail:messages-changed"));
-			});
-		}
-		setDraftId(null);
-		setTo("");
-		setCc("");
-		setBcc("");
-		setShowCcBcc(false);
-		setSubject("");
-		setText("");
-		setHtml(signatureBlockHtml(selectedMailbox?.signature));
-		setAttachments([]);
-		setToast({ type: "success", message: "Message sent" });
-		window.dispatchEvent(new Event("trtmail:messages-changed"));
+		// Start the undo window: count down, then send.
+		setHoldSecs(secs);
+		holdTick.current = setInterval(() => setHoldSecs((s) => (s === null ? null : Math.max(0, s - 1))), 1000);
+		holdTimer.current = setTimeout(() => void doSend(), secs * 1000);
 	}
+
+	useEffect(() => () => cancelHold(), []);
 
 	function addAttachments(files: FileList | null) {
 		if (!files) return;
@@ -432,31 +453,45 @@ export function ComposeForm({
 						))}
 					</div>
 				)}
-				<div className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3">
-					<Input
-						ref={attachmentInput}
-						type="file"
-						multiple
-						className="hidden"
-						onChange={(event) => addAttachments(event.target.files)}
-					/>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onClick={() => attachmentInput.current?.click()}
-						disabled={loading || loadingDraft}
-					>
-						<Paperclip className="h-4 w-4" />
-						Attach
-					</Button>
-					<span className="flex-1" />
-					<p className="text-xs text-neutral-500">{draftId ? "Saved to drafts" : "Autosaves as draft"}</p>
-					<Button type="submit" disabled={loading || loadingDraft || !fromAddr} className="rounded-full px-5">
+				{holdSecs !== null ? (
+					<div className="flex items-center gap-3 border-t border-neutral-100 bg-neutral-900 px-4 py-3 text-sm text-white">
 						<Send className="h-4 w-4" />
-						{loading ? "Sending" : "Send"}
-					</Button>
-				</div>
+						<span>Sending in {holdSecs}s…</span>
+						<span className="flex-1" />
+						<button type="button" onClick={cancelHold} className="rounded-md px-3 py-1 font-semibold text-blue-300 hover:bg-white/10">
+							Undo
+						</button>
+						<button type="button" onClick={() => void doSend()} className="rounded-md px-3 py-1 font-semibold text-white hover:bg-white/10">
+							Send now
+						</button>
+					</div>
+				) : (
+					<div className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3">
+						<Input
+							ref={attachmentInput}
+							type="file"
+							multiple
+							className="hidden"
+							onChange={(event) => addAttachments(event.target.files)}
+						/>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => attachmentInput.current?.click()}
+							disabled={loading || loadingDraft}
+						>
+							<Paperclip className="h-4 w-4" />
+							Attach
+						</Button>
+						<span className="flex-1" />
+						<p className="text-xs text-neutral-500">{draftId ? "Saved to drafts" : "Autosaves as draft"}</p>
+						<Button type="submit" disabled={loading || loadingDraft || !fromAddr} className="rounded-full px-5">
+							<Send className="h-4 w-4" />
+							{loading ? "Sending" : "Send"}
+						</Button>
+					</div>
+				)}
 			</form>
 		</>
 	);

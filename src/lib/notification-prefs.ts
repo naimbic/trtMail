@@ -3,6 +3,25 @@
 
 export const SOUND_KEY = "trtmail:sound";
 export const DESKTOP_KEY = "trtmail:desktop";
+export const UNDO_SEND_KEY = "trtmail:undosend";
+
+/** Undo-send window in seconds (0 = send immediately). Default 5. */
+export function getUndoSendSeconds(): number {
+	try {
+		const n = Number(localStorage.getItem(UNDO_SEND_KEY));
+		return Number.isFinite(n) && n >= 0 ? n : 5;
+	} catch {
+		return 5;
+	}
+}
+
+export function setUndoSendSeconds(secs: number): void {
+	try {
+		localStorage.setItem(UNDO_SEND_KEY, String(secs));
+	} catch {
+		/* ignore */
+	}
+}
 
 export function isSoundEnabled(): boolean {
 	try {
