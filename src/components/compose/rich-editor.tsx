@@ -149,7 +149,7 @@ export function RichEditor({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="flex flex-wrap items-center gap-0.5 border-b border-neutral-100 pb-2">
+			<div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-neutral-100 pb-2">
 				<button type="button" title="Undo" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("undo")}><Undo2 className="h-4 w-4" /></button>
 				<button type="button" title="Redo" className={btn} disabled={disabled} onMouseDown={noBlur} onClick={() => exec("redo")}><Redo2 className="h-4 w-4" /></button>
 				<Divider />
@@ -233,7 +233,7 @@ export function RichEditor({
 				role="textbox"
 				aria-multiline="true"
 				data-placeholder={placeholder}
-				className={`rich-editor prose prose-sm mt-3 h-full max-w-none flex-1 overflow-auto text-sm text-neutral-900 focus:outline-none ${className ?? ""}`}
+				className={`rich-editor prose prose-sm mt-3 min-h-0 max-w-none flex-1 overflow-auto text-sm text-neutral-900 focus:outline-none ${className ?? ""}`}
 			/>
 			<style jsx global>{`
 				.rich-editor:empty:before { content: attr(data-placeholder); color: #9ca3af; pointer-events: none; }

@@ -38,12 +38,17 @@ export function getMessageBodyDisplay(
 	fallback: string | null | undefined,
 	ownAddress?: string,
 ): MessageBodyDisplay {
-	const textSource = textBody ?? (htmlToReadableText(htmlBody) || fallback || "");
+	// Keep the styled HTML whenever it exists — a formatted email should never be
+	// downgraded to plain text. The plaintext "latest + collapsible quotes" split is
+	// only used for plain-text-only messages.
+	if (htmlBody) {
+		return { latestContent: "", quotedContent: [], htmlBody, hasQuotedContent: false };
+	}
+	const textSource = textBody ?? fallback ?? "";
 	const parts = splitRepliedEmailContent(textSource, { ownAddress });
-
 	return {
 		...parts,
-		htmlBody: parts.quotedContent.length > 0 ? null : htmlBody ?? null,
+		htmlBody: null,
 		hasQuotedContent: parts.quotedContent.length > 0,
 	};
 }

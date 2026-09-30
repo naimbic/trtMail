@@ -422,7 +422,6 @@ export function ComposeForm({
 							setHtml(nextHtml);
 							setText(nextText);
 						}}
-						className="min-h-full"
 					/>
 				</div>
 				{attachments.length > 0 && (
