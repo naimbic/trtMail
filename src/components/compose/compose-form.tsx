@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Minimize2, Paperclip, Send, X } from "lucide-react";
+import { FileText, Paperclip, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { authFetch } from "@/lib/auth/client";
 import { formatEmailAddress, getEmailAddress } from "@/lib/email/address";
@@ -318,34 +319,27 @@ export function ComposeForm({
 
 	const frameClass =
 		mode === "popup"
-			? "fixed bottom-4 right-4 z-40 flex h-[min(680px,calc(100vh-56px))] w-[min(680px,calc(100vw-32px))] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xl"
+			? "flex h-[min(700px,85vh)] w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xl"
 			: "flex h-full min-h-[720px] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm";
 
-	return (
-		<>
-			{toast && (
-				<div
-					className={cn(
-						"fixed right-6 top-6 z-50 rounded-lg px-4 py-3 text-sm font-medium shadow-lg",
-						toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white",
-					)}
-				>
-					{toast.message}
-				</div>
-			)}
+	const composer = (
 			<form onSubmit={onSubmit} className={frameClass}>
-				<div className="flex h-9 items-center justify-between bg-neutral-800 px-4 text-sm font-medium text-white">
-					<span>{loadingDraft ? "Loading draft" : draftId ? "Draft saved" : "New Message"}</span>
+				<div className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-5">
+					<span className="text-sm font-semibold text-neutral-900">
+						{loadingDraft ? "Loading draft…" : draftId ? "Draft" : "New message"}
+					</span>
 					{mode === "popup" && (
-						<div className="flex items-center gap-3 text-neutral-300">
-							<Minimize2 className="h-4 w-4" />
-							<button type="button" onClick={onClose}>
-								<X className="h-4 w-4" />
-							</button>
-						</div>
+						<button
+							type="button"
+							onClick={onClose}
+							aria-label="Close"
+							className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+						>
+							<X className="h-4 w-4" />
+						</button>
 					)}
 				</div>
-				<div className="border-b border-neutral-100 px-4 py-1">
+				<div className="shrink-0 border-b border-neutral-100 px-4 py-1">
 					<Label htmlFor={`${mode}-from`} className="sr-only">From</Label>
 					<Select
 						id={`${mode}-from`}
@@ -361,7 +355,7 @@ export function ComposeForm({
 						))}
 					</Select>
 				</div>
-				<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
+				<div className="flex shrink-0 items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 					<Label htmlFor={`${mode}-to`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">To</Label>
 					<RecipientSelect
 						id={`${mode}-to`}
@@ -383,7 +377,7 @@ export function ComposeForm({
 				</div>
 				{showCcBcc && (
 					<>
-						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
+						<div className="flex shrink-0 items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-cc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Cc</Label>
 							<RecipientSelect
 								id={`${mode}-cc`}
@@ -394,7 +388,7 @@ export function ComposeForm({
 								disabled={loadingDraft}
 							/>
 						</div>
-						<div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
+						<div className="flex shrink-0 items-center gap-2 border-b border-neutral-100 px-4 py-1.5">
 							<Label htmlFor={`${mode}-bcc`} className="w-8 shrink-0 text-xs font-medium text-neutral-500">Bcc</Label>
 							<RecipientSelect
 								id={`${mode}-bcc`}
@@ -407,7 +401,7 @@ export function ComposeForm({
 						</div>
 					</>
 				)}
-				<div className="border-b border-neutral-100 px-4 py-1">
+				<div className="shrink-0 border-b border-neutral-100 px-4 py-1">
 					<Label htmlFor={`${mode}-subject`} className="sr-only">Subject</Label>
 					<Input
 						id={`${mode}-subject`}
@@ -419,7 +413,7 @@ export function ComposeForm({
 						className="h-8 border-0 px-0 py-1 shadow-none focus-visible:ring-0"
 					/>
 				</div>
-				<div className="min-h-0 flex-1 px-4 py-2">
+				<div className="min-h-0 flex-1 overflow-hidden px-4 py-2">
 					<Label htmlFor={`${mode}-text`} className="sr-only">Body</Label>
 					<RichEditor
 						seed={html}
@@ -432,7 +426,7 @@ export function ComposeForm({
 					/>
 				</div>
 				{attachments.length > 0 && (
-					<div className="flex flex-wrap gap-2 border-t border-neutral-100 px-4 py-3">
+					<div className="flex max-h-28 shrink-0 flex-wrap gap-2 overflow-y-auto border-t border-neutral-100 px-4 py-3">
 						{attachments.map((attachment) => (
 							<div
 								key={attachment.id}
@@ -460,7 +454,7 @@ export function ComposeForm({
 					</div>
 				)}
 				{holdSecs !== null ? (
-					<div className="flex items-center gap-3 border-t border-neutral-100 bg-neutral-900 px-4 py-3 text-sm text-white">
+					<div className="flex shrink-0 items-center gap-3 border-t border-neutral-100 bg-neutral-900 px-4 py-3 text-sm text-white">
 						<Send className="h-4 w-4" />
 						<span>Sending in {holdSecs}s…</span>
 						<span className="flex-1" />
@@ -472,7 +466,7 @@ export function ComposeForm({
 						</button>
 					</div>
 				) : (
-					<div className="flex items-center gap-3 border-t border-neutral-100 px-4 py-3">
+					<div className="flex shrink-0 items-center gap-2 border-t border-neutral-100 bg-neutral-50/60 px-4 py-3">
 						<Input
 							ref={attachmentInput}
 							type="file"
@@ -480,25 +474,49 @@ export function ComposeForm({
 							className="hidden"
 							onChange={(event) => addAttachments(event.target.files)}
 						/>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => attachmentInput.current?.click()}
-							disabled={loading || loadingDraft}
-						>
-							<Paperclip className="h-4 w-4" />
-							Attach
-						</Button>
-						<span className="flex-1" />
-						<p className="text-xs text-neutral-500">{draftId ? "Saved to drafts" : "Autosaves as draft"}</p>
-						<Button type="submit" disabled={loading || loadingDraft || !fromAddr} className="rounded-full px-5">
+						<Button type="submit" disabled={loading || loadingDraft || !fromAddr} className="rounded-full px-6">
 							<Send className="h-4 w-4" />
 							{loading ? "Sending" : "Send"}
 						</Button>
+						<Tooltip label="Attach files">
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								aria-label="Attach files"
+								onClick={() => attachmentInput.current?.click()}
+								disabled={loading || loadingDraft}
+							>
+								<Paperclip className="h-4 w-4" />
+							</Button>
+						</Tooltip>
+						<span className="flex-1" />
+						<p className="text-xs text-neutral-400">{draftId ? "Saved to drafts" : "Autosaves as draft"}</p>
 					</div>
 				)}
-			</form>
+		</form>
+	);
+
+	return (
+		<>
+			{toast && (
+				<div
+					className={cn(
+						"fixed right-6 top-6 z-[60] rounded-lg px-4 py-3 text-sm font-medium shadow-lg",
+						toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white",
+					)}
+				>
+					{toast.message}
+				</div>
+			)}
+			{mode === "popup" ? (
+				<div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
+					<div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" onClick={onClose} />
+					<div className="relative w-full max-w-[680px]">{composer}</div>
+				</div>
+			) : (
+				composer
+			)}
 		</>
 	);
 }
