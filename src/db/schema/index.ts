@@ -205,6 +205,7 @@ export const messages = sqliteTable(
 		read: integer("read", { mode: "boolean" }).notNull().default(false),
 		starred: integer("starred", { mode: "boolean" }).notNull().default(false),
 		pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+		replied: integer("replied", { mode: "boolean" }).notNull().default(false),
 		snoozedUntil: integer("snoozed_until", { mode: "timestamp" }),
 		threadId: text("thread_id"),
 		createdAt: integer("created_at", { mode: "timestamp" })

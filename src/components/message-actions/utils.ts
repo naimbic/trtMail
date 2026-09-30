@@ -175,6 +175,7 @@ export async function createReplyDraft({
   subject,
   bodyText,
   cc,
+  sourceMessageId,
 }: ReplyDraftInput) {
   const to = getEmailAddress(senderAddress).trim();
   if (!to) throw new Error("Sender address is required");
@@ -198,5 +199,11 @@ export async function createReplyDraft({
   };
   if (!response.ok || !data.draft)
     throw new Error(data.error ?? "Unable to create reply draft");
+  // Mark the original message as replied-to (persistent blue reply indicator).
+  if (sourceMessageId) {
+    void authFetch(`/api/messages/${sourceMessageId}/replied`, { method: "POST" })
+      .then(() => window.dispatchEvent(new Event("trtmail:messages-changed")))
+      .catch(() => {});
+  }
   return data.draft.id;
 }

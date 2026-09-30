@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, Inbox, Pin, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Inbox, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -111,6 +111,9 @@ function MessageListRow({
 							unread ? "font-semibold text-neutral-900" : "text-neutral-700"
 						}`}
 					>
+						{rowMessage.replied && (
+							<Reply className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-blue-600" aria-label="Replied" />
+						)}
 						{message.subject ?? "(no subject)"}
 					</span>
 					<span className="mt-0.5 block truncate text-xs leading-5 text-neutral-500">
@@ -168,6 +171,9 @@ function MessageListRow({
 				{party}
 			</span>
 			<span className="truncate text-neutral-700">
+				{rowMessage.replied && (
+					<Reply className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-blue-600" aria-label="Replied" />
+				)}
 				<span className={unread ? "font-bold text-neutral-900" : ""}>
 					{rowMessage.subject ?? "(no subject)"}
 				</span>

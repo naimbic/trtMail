@@ -41,6 +41,7 @@ export function MessageActions({
 	ownAddress,
 	toAddr,
 	ccAddr,
+	replied,
 }: MessageActionsProps) {
 	const router = useRouter();
 	const { openDraftComposer } = useCompose();
@@ -106,6 +107,7 @@ export function MessageActions({
 				subject,
 				bodyText,
 				cc,
+				sourceMessageId: messageId,
 			});
 			openDraftComposer(draftId);
 		} catch (replyError) {
@@ -153,7 +155,7 @@ export function MessageActions({
 						disabled={disabled}
 						onClick={() => handleReply()}
 					>
-						<Reply className="h-5 w-5" />
+						<Reply className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
 					</Button>
 				</Tooltip>
 				{replyAllCc && (
@@ -166,7 +168,7 @@ export function MessageActions({
 							disabled={disabled}
 							onClick={() => handleReply(replyAllCc)}
 						>
-							<ReplyAll className="h-5 w-5" />
+							<ReplyAll className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
 						</Button>
 					</Tooltip>
 				)}

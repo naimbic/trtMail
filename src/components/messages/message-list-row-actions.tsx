@@ -43,6 +43,7 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 				subject: message.subject,
 				bodyText: message.textBody ?? message.snippet,
 				cc,
+				sourceMessageId: message.id,
 			});
 			openDraftComposer(draftId);
 		} catch (replyError) {
@@ -71,15 +72,15 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 	return (
 		<>
 			<div className="pointer-events-none absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-				<Tooltip label="Reply">
+				<Tooltip label={message.replied ? "Replied — reply again" : "Reply"}>
 					<Button type="button" variant="ghost" size="sm" disabled={replying} onClick={() => void handleReply()} aria-label="Reply">
-						<Reply className="h-4 w-4" />
+						<Reply className={`h-4 w-4 ${message.replied ? "text-blue-600" : ""}`} />
 					</Button>
 				</Tooltip>
 				{replyAllCc && (
 					<Tooltip label="Reply all">
 						<Button type="button" variant="ghost" size="sm" disabled={replying} onClick={() => void handleReply(replyAllCc)} aria-label="Reply all">
-							<ReplyAll className="h-4 w-4" />
+							<ReplyAll className={`h-4 w-4 ${message.replied ? "text-blue-600" : ""}`} />
 						</Button>
 					</Tooltip>
 				)}

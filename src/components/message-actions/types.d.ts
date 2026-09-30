@@ -15,6 +15,7 @@ export type MessageActionsProps = {
 	ownAddress?: string | null;
 	toAddr?: string | null;
 	ccAddr?: string | null;
+	replied?: boolean;
 };
 
 export type SingleMessageAction = BulkMessageAction | "reply";
@@ -26,6 +27,7 @@ export type ReplyDraftInput = {
 	subject?: string | null;
 	bodyText?: string | null;
 	cc?: string;
+	sourceMessageId?: string;
 };
 
 export type TrashSenderRuleInput = {

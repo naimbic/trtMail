@@ -131,6 +131,7 @@ export default function MessageDetailPage() {
           ownAddress={ownAddress}
           toAddr={message.toAddr}
           ccAddr={message.ccAddr}
+          replied={message.replied}
         />
       </div>
       <article className="px-6 py-4">
