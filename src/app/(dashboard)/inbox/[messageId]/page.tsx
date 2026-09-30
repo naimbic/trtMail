@@ -175,20 +175,24 @@ export default function MessageDetailPage() {
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}
           </p>
         </div>
-        <div className="prose max-w-none text-neutral-900 [&_a]:break-words [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md">
+        <div className="mail-body max-w-2xl text-[15px] leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6">
           {htmlBody ? (
-            <div className="mx-auto" dangerouslySetInnerHTML={{ __html: htmlBody }} />
+            <div dangerouslySetInnerHTML={{ __html: htmlBody }} />
           ) : (
-            <pre className="mx-auto whitespace-pre-wrap break-words font-sans text-sm">
+            <pre className="whitespace-pre-wrap break-words font-sans text-[15px] leading-relaxed">
               {linkify(cloudAttachmentResult.content)}
             </pre>
           )}
-          {bodyDisplay.quotedContent.map((quotedContent) => (
-            <PreviousMessage
-              key={`${quotedContent.dateLine}-${quotedContent.content.slice(0, 24)}`}
-              message={quotedContent}
-            />
-          ))}
+          {bodyDisplay.quotedContent.length > 0 && (
+            <div className="mt-6 space-y-2 border-t border-neutral-100 pt-4">
+              {bodyDisplay.quotedContent.map((quotedContent) => (
+                <PreviousMessage
+                  key={`${quotedContent.dateLine}-${quotedContent.content.slice(0, 24)}`}
+                  message={quotedContent}
+                />
+              ))}
+            </div>
+          )}
         </div>
         {cloudAttachmentResult.attachments.length > 0 && (
           <section className="mt-8 border-t border-neutral-100 py-6">

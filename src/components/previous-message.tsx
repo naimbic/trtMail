@@ -1,28 +1,61 @@
-import { ChevronRight } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { MoreHorizontal } from "lucide-react";
+import { linkify } from "@/lib/email/linkify";
 import type { PreviousMessageProps } from "./previous-message-types";
 
+// Strip the leading "> " quote markers email clients add, so nested replies read cleanly.
+function stripQuoteMarkers(text: string): string {
+	return text
+		.split("\n")
+		.map((line) => line.replace(/^\s*>+ ?/, ""))
+		.join("\n")
+		.trim();
+}
+
 export function PreviousMessage({ message }: PreviousMessageProps) {
+	const [open, setOpen] = useState(false);
+	const body = stripQuoteMarkers(message.content ?? "");
+
 	return (
-		<details className="group mt-4 border-l-2 border-neutral-200 pl-4">
-			<summary className="flex cursor-pointer list-none items-center gap-2 rounded-md py-2 text-xs font-medium text-neutral-500 hover:text-neutral-800">
-				<ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" />
-				<span>
-					Previous message {message.direction} at {message.dateLine}
-				</span>
-			</summary>
-			<div className="pb-2 pl-5 text-neutral-600">
-				{message.content && (
-					<pre className="whitespace-pre-wrap text-sm font-sans">
-						{message.content}
-					</pre>
-				)}
-				{message.quotedContent.map((nestedMessage, index) => (
-					<PreviousMessage
-						key={`${nestedMessage.dateLine}-${nestedMessage.content.slice(0, 24)}-${index}`}
-						message={nestedMessage}
-					/>
-				))}
-			</div>
-		</details>
+		<div className="text-sm">
+			{!open ? (
+				<button
+					type="button"
+					onClick={() => setOpen(true)}
+					aria-label="Show quoted text"
+					title="Show quoted text"
+					className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-0.5 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700"
+				>
+					<MoreHorizontal className="h-4 w-4" />
+				</button>
+			) : (
+				<div className="border-l-2 border-neutral-200 pl-4">
+					<button
+						type="button"
+						onClick={() => setOpen(false)}
+						className="mb-1 text-xs font-medium text-neutral-400 hover:text-neutral-600"
+					>
+						Hide quoted text
+					</button>
+					{message.dateLine && (
+						<p className="mb-1 text-xs text-neutral-400">
+							On {message.dateLine}, {message.direction === "sent" ? "you" : "they"} wrote:
+						</p>
+					)}
+					{body && (
+						<pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-neutral-600">
+							{linkify(body)}
+						</pre>
+					)}
+					{message.quotedContent.map((nested, index) => (
+						<div key={`${nested.dateLine}-${nested.content.slice(0, 24)}-${index}`} className="mt-3">
+							<PreviousMessage message={nested} />
+						</div>
+					))}
+				</div>
+			)}
+		</div>
 	);
 }
