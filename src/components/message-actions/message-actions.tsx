@@ -1,19 +1,27 @@
 "use client";
 
-import { createElement, useState } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Ban, BellOff, Mail, MailOpen, MoreVertical, Reply, ReplyAll, ShieldAlert, Trash2 } from "lucide-react";
+import {
+	Archive,
+	Ban,
+	BellOff,
+	Folder,
+	Mail,
+	MailOpen,
+	MoreVertical,
+	Reply,
+	ReplyAll,
+	ShieldAlert,
+	Star,
+	Trash2,
+} from "lucide-react";
 import { useCompose } from "@/components/compose/compose-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
-import { MoveToFolder } from "./move-to-folder";
+import { authFetch } from "@/lib/auth/client";
+import { toggleMessageStar } from "@/components/messages/message-list-row-actions-utils";
 import { emitUndo, moveMessagesToInbox } from "@/lib/messages/undo";
-
-const UNDO_LABELS: Partial<Record<BulkMessageAction, string>> = {
-	archive: "Message archived",
-	trash: "Message moved to Trash",
-	spam: "Message reported as spam",
-};
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import type { MessageActionsProps } from "./types";
 import {
@@ -27,6 +35,14 @@ import {
 	openUnsubscribeUrl,
 	runSingleMessageAction,
 } from "./utils";
+
+const UNDO_LABELS: Partial<Record<BulkMessageAction, string>> = {
+	archive: "Message archived",
+	trash: "Message moved to Trash",
+	spam: "Message reported as spam",
+};
+
+type CustomFolder = { id: string; name: string; color?: string };
 
 export function MessageActions({
 	messageId,
@@ -42,6 +58,7 @@ export function MessageActions({
 	toAddr,
 	ccAddr,
 	replied,
+	starred: starredProp,
 }: MessageActionsProps) {
 	const router = useRouter();
 	const { openDraftComposer } = useCompose();
@@ -50,6 +67,41 @@ export function MessageActions({
 	>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [moreOpen, setMoreOpen] = useState(false);
+	const [starred, setStarred] = useState(Boolean(starredProp));
+	const [folders, setFolders] = useState<CustomFolder[] | null>(null);
+	const menuRef = useRef<HTMLDivElement | null>(null);
+
+	// Close the ⋯ menu on outside click / Escape (attached next tick to avoid the
+	// opening click closing it).
+	useEffect(() => {
+		if (!moreOpen) return;
+		function onDocClick(e: MouseEvent) {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMoreOpen(false);
+		}
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") setMoreOpen(false);
+		}
+		const id = window.setTimeout(() => {
+			document.addEventListener("mousedown", onDocClick);
+			document.addEventListener("keydown", onKey);
+		}, 0);
+		return () => {
+			window.clearTimeout(id);
+			document.removeEventListener("mousedown", onDocClick);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [moreOpen]);
+
+	function openMore() {
+		const next = !moreOpen;
+		setMoreOpen(next);
+		if (next && folders === null && mailboxId) {
+			authFetch(`/api/folders?mailboxId=${encodeURIComponent(mailboxId)}`)
+				.then((res) => res.json() as Promise<{ folders?: CustomFolder[] }>)
+				.then((data) => setFolders(data.folders ?? []))
+				.catch(() => setFolders([]));
+		}
+	}
 
 	async function runAction(action: BulkMessageAction) {
 		setMoreOpen(false);
@@ -69,6 +121,35 @@ export function MessageActions({
 		}
 	}
 
+	async function moveToFolder(folderId: string) {
+		setMoreOpen(false);
+		setPendingAction("archive");
+		try {
+			const res = await authFetch(`/api/messages/bulk`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ messageIds: [messageId], action: "folder", folderId }),
+			});
+			if (!res.ok) throw new Error("move failed");
+			window.dispatchEvent(new Event("trtmail:messages-changed"));
+			router.push("/inbox");
+			router.refresh();
+		} catch {
+			setError("Could not move message");
+		} finally {
+			setPendingAction(null);
+		}
+	}
+
+	async function toggleStar() {
+		try {
+			const result = await toggleMessageStar(messageId);
+			setStarred(result.starred);
+		} catch {
+			/* ignore */
+		}
+	}
+
 	async function onUnsubscribe() {
 		setMoreOpen(false);
 		setError(null);
@@ -76,7 +157,6 @@ export function MessageActions({
 			openUnsubscribeUrl(unsubscribeUrl);
 			return;
 		}
-
 		if (!confirmTrashWithoutUnsubscribe()) return;
 		setPendingAction("unsubscribe");
 		if (!mailboxId) {
@@ -84,7 +164,6 @@ export function MessageActions({
 			setPendingAction(null);
 			return;
 		}
-
 		try {
 			await createTrashSenderRule({ mailboxId, senderAddress });
 			await runAction("trash");
@@ -100,14 +179,7 @@ export function MessageActions({
 		setPendingAction("reply");
 		setError(null);
 		try {
-			const draftId = await createReplyDraft({
-				mailboxId,
-				senderAddress,
-				ownAddress,
-				subject,
-				bodyText,
-				cc,
-			});
+			const draftId = await createReplyDraft({ mailboxId, senderAddress, ownAddress, subject, bodyText, cc });
 			openDraftComposer(draftId, messageId);
 		} catch (replyError) {
 			setError(replyError instanceof Error ? replyError.message : "Could not start reply");
@@ -123,7 +195,6 @@ export function MessageActions({
 			setError("Could not block contact");
 			return;
 		}
-
 		setPendingAction("block");
 		try {
 			await blockMessageContact({ mailboxId, senderAddress });
@@ -140,144 +211,100 @@ export function MessageActions({
 	const disabled = pendingAction !== null;
 	const markAction: BulkMessageAction = read ? "unread" : "read";
 	const moveActions = getMoveMessageActions(status, direction);
+	const menuItem =
+		"flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-400";
 
 	return (
-		<div className="flex items-center gap-3 text-neutral-600">
-			{error && <span className="text-xs text-red-600">{error}</span>}
-			<div className="flex items-center gap-2">
-				<Tooltip label="Reply">
+		<div className="flex items-center gap-1 text-neutral-600">
+			{error && <span className="mr-1 text-xs text-red-600">{error}</span>}
+
+			<Tooltip label={starred ? "Starred" : "Star"}>
+				<Button type="button" variant="ghost" size="sm" aria-label={starred ? "Starred" : "Star"} onClick={() => void toggleStar()}>
+					<Star className={`h-5 w-5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
+				</Button>
+			</Tooltip>
+
+			<Tooltip label="Reply">
+				<Button type="button" variant="ghost" size="sm" aria-label="Reply" disabled={disabled} onClick={() => handleReply()}>
+					<Reply className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
+				</Button>
+			</Tooltip>
+
+			{replyAllCc && (
+				<Tooltip label="Reply all">
+					<Button type="button" variant="ghost" size="sm" aria-label="Reply all" disabled={disabled} onClick={() => handleReply(replyAllCc)}>
+						<ReplyAll className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
+					</Button>
+				</Tooltip>
+			)}
+
+			<div className="relative" ref={menuRef}>
+				<Tooltip label="More">
 					<Button
 						type="button"
 						variant="ghost"
 						size="sm"
-						aria-label="Reply"
+						aria-label="More"
+						aria-expanded={moreOpen}
 						disabled={disabled}
-						onClick={() => handleReply()}
+						onClick={openMore}
 					>
-						<Reply className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
+						<MoreVertical className="h-5 w-5" />
 					</Button>
 				</Tooltip>
-				{replyAllCc && (
-					<Tooltip label="Reply all">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							aria-label="Reply all"
-							disabled={disabled}
-							onClick={() => handleReply(replyAllCc)}
-						>
-							<ReplyAll className={`h-5 w-5 ${replied ? "text-blue-600" : ""}`} />
-						</Button>
-					</Tooltip>
-				)}
-				<Tooltip label="Archive">
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label="Archive"
-						disabled={disabled || status === "archived"}
-						onClick={() => runAction("archive")}
-					>
-						<Archive className="h-5 w-5" />
-					</Button>
-				</Tooltip>
-				<Tooltip label="Report spam">
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label="Report spam"
-						disabled={disabled || status === "spam" || direction !== "inbound"}
-						onClick={() => runAction("spam")}
-					>
-						<ShieldAlert className="h-5 w-5" />
-					</Button>
-				</Tooltip>
-				<Tooltip label="Delete">
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label="Move to trash"
-						disabled={disabled || status === "trash"}
-						onClick={() => runAction("trash")}
-					>
-						<Trash2 className="h-5 w-5" />
-					</Button>
-				</Tooltip>
-				<Tooltip label={read ? "Mark as unread" : "Mark as read"}>
-					<Button
-						variant="ghost"
-						size="sm"
-						aria-label={read ? "Mark as unread" : "Mark as read"}
-						disabled={disabled}
-						onClick={() => runAction(markAction)}
-					>
-						{read ? <Mail className="h-5 w-5" /> : <MailOpen className="h-5 w-5" />}
-					</Button>
-				</Tooltip>
-				<MoveToFolder
-					messageId={messageId}
-					mailboxId={mailboxId}
-					onMoved={() => {
-						router.push("/inbox");
-						router.refresh();
-					}}
-				/>
-				<div className="relative">
-					<Tooltip label="More actions">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							aria-label="More actions"
-							aria-expanded={moreOpen}
-							disabled={disabled}
-							onClick={() => setMoreOpen((open) => !open)}
-						>
-							<MoreVertical className="h-5 w-5" />
-						</Button>
-					</Tooltip>
-					{moreOpen && (
-						<div className="absolute right-0 z-20 mt-2 w-54 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
-							{direction === "inbound" && (
-								<>
-									<button
-										type="button"
-									className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-neutral-400"
+				{moreOpen && (
+					<div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-60 overflow-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
+						<button type="button" className={menuItem} disabled={status === "trash"} onClick={() => void runAction("trash")}>
+							<Trash2 className="h-4 w-4 shrink-0" /> Delete
+						</button>
+						<button type="button" className={menuItem} onClick={() => void runAction(markAction)}>
+							{read ? <Mail className="h-4 w-4 shrink-0" /> : <MailOpen className="h-4 w-4 shrink-0" />}
+							{read ? "Mark as unread" : "Mark as read"}
+						</button>
+						<button type="button" className={menuItem} disabled={status === "archived"} onClick={() => void runAction("archive")}>
+							<Archive className="h-4 w-4 shrink-0" /> Archive
+						</button>
+						{direction === "inbound" && (
+							<>
+								<hr className="my-1 border-neutral-100" />
+								<button
+									type="button"
+									className={menuItem}
+									disabled={status === "spam"}
+									onClick={() => void runAction("spam")}
+								>
+									<ShieldAlert className="h-4 w-4 shrink-0" /> Report spam
+								</button>
+								<button
+									type="button"
+									className={menuItem}
 									disabled={!unsubscribeUrl && status === "trash"}
 									onClick={() => void onUnsubscribe()}
 								>
-									<BellOff className="h-4 w-4 shrink-0" />
-									Unsubscribe
-									</button>
-									<button
-										type="button"
-									className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
-										onClick={() => void onBlockContact()}
-									>
-										<Ban className="h-4 w-4" />
-										Block contact
-									</button>
-							<hr className="my-1 border-neutral-100" />
-								</>
-							)}
-							<p className="mt-1 px-3 pb-1 pt-2 text-sm font-medium text-neutral-500">
-								Move to
-							</p>
-							{moveActions.map((item) => (
-								<button
-									key={item.action}
-									type="button"
-									className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
-									onClick={() => void runAction(item.action)}
-								>
-									{createElement(item.icon, { size: 16 })}
-									{item.label}
+									<BellOff className="h-4 w-4 shrink-0" /> Unsubscribe
 								</button>
-							))}
-						</div>
-					)}
-				</div>
+								<button type="button" className={menuItem} onClick={() => void onBlockContact()}>
+									<Ban className="h-4 w-4 shrink-0" /> Block contact
+								</button>
+							</>
+						)}
+						<hr className="my-1 border-neutral-100" />
+						<p className="px-3 pb-1 pt-1 text-xs font-medium uppercase tracking-wide text-neutral-400">Move to</p>
+						{moveActions.map((item) => (
+							<button key={item.action} type="button" className={menuItem} onClick={() => void runAction(item.action)}>
+								{createElement(item.icon, { size: 16 })}
+								{item.label}
+							</button>
+						))}
+						{folders === null && <p className="px-3 py-1.5 text-sm text-neutral-400">Loading folders…</p>}
+						{folders?.map((folder) => (
+							<button key={folder.id} type="button" className={menuItem} onClick={() => void moveToFolder(folder.id)}>
+								<Folder className="h-4 w-4 shrink-0" style={{ color: folder.color ?? "#2563eb" }} />
+								{folder.name}
+							</button>
+						))}
+					</div>
+				)}
 			</div>
 		</div>
 	);

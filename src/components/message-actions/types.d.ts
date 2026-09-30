@@ -16,6 +16,7 @@ export type MessageActionsProps = {
 	toAddr?: string | null;
 	ccAddr?: string | null;
 	replied?: boolean;
+	starred?: boolean;
 };
 
 export type SingleMessageAction = BulkMessageAction | "reply";
