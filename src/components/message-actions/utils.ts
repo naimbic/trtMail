@@ -175,7 +175,6 @@ export async function createReplyDraft({
   subject,
   bodyText,
   cc,
-  sourceMessageId,
 }: ReplyDraftInput) {
   const to = getEmailAddress(senderAddress).trim();
   if (!to) throw new Error("Sender address is required");
@@ -199,11 +198,8 @@ export async function createReplyDraft({
   };
   if (!response.ok || !data.draft)
     throw new Error(data.error ?? "Unable to create reply draft");
-  // Mark the original message as replied-to (persistent blue reply indicator).
-  if (sourceMessageId) {
-    void authFetch(`/api/messages/${sourceMessageId}/replied`, { method: "POST" })
-      .then(() => window.dispatchEvent(new Event("trtmail:messages-changed")))
-      .catch(() => {});
-  }
+  // Note: the source message is marked "replied" only when the reply is actually
+  // SENT (handled in the composer via the compose context's replyToId), so opening
+  // a reply and cancelling does NOT flag it.
   return data.draft.id;
 }

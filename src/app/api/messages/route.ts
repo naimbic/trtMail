@@ -150,11 +150,21 @@ export async function GET(request: Request) {
 			] as const),
 		),
 	);
+	const rowIds = rows.map((message) => message.id);
+	const attachmentRows = rowIds.length
+		? await db
+				.select({ messageId: messageAttachments.messageId })
+				.from(messageAttachments)
+				.where(inArray(messageAttachments.messageId, rowIds))
+		: [];
+	const withAttachments = new Set(attachmentRows.map((row) => row.messageId));
+
 	const enrichedRows = rows.map(({ rawR2Key: _rawR2Key, ...message }) => {
 		const contactMap = contactMapsByUserId.get(message.userId);
 		const accountName = message.mailboxId ? mailboxNameMap.get(message.mailboxId) : null;
 		return {
 			...message,
+			hasAttachments: withAttachments.has(message.id),
 			snippet: buildSnippet(message.textBody, message.htmlBody) || message.snippet,
 			fromContactName:
 				(message.direction === "outbound" ? accountName : null) ??

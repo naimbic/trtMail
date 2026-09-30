@@ -107,9 +107,8 @@ export function MessageActions({
 				subject,
 				bodyText,
 				cc,
-				sourceMessageId: messageId,
 			});
-			openDraftComposer(draftId);
+			openDraftComposer(draftId, messageId);
 		} catch (replyError) {
 			setError(replyError instanceof Error ? replyError.message : "Could not start reply");
 		} finally {

@@ -38,11 +38,13 @@ export function ComposeForm({
 	mode = "page",
 	draftIdToLoad,
 	initialTo = "",
+	replyToId = null,
 	onClose,
 }: {
 	mode?: "page" | "popup";
 	draftIdToLoad?: string | null;
 	initialTo?: string;
+	replyToId?: string | null;
 	onClose?: () => void;
 }) {
 	const { selectedMailbox, setSelectedMailbox, mailboxes } = useSelectedMailbox();
@@ -249,6 +251,10 @@ export function ComposeForm({
 			setHtml(signatureBlockHtml(selectedMailbox?.signature));
 			setAttachments([]);
 			setToast({ type: "success", message: "Message sent" });
+			// Flag the replied-to message ONLY now that the reply actually went out.
+			if (replyToId) {
+				void authFetch(`/api/messages/${replyToId}/replied`, { method: "POST" }).catch(() => {});
+			}
 			window.dispatchEvent(new Event("trtmail:messages-changed"));
 		} finally {
 			setLoading(false);

@@ -43,9 +43,8 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 				subject: message.subject,
 				bodyText: message.textBody ?? message.snippet,
 				cc,
-				sourceMessageId: message.id,
 			});
-			openDraftComposer(draftId);
+			openDraftComposer(draftId, message.id);
 		} catch (replyError) {
 			setError(replyError instanceof Error ? replyError.message : "Could not start reply");
 		} finally {

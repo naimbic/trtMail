@@ -26,6 +26,7 @@ export type Message = {
 	starred: boolean;
 	pinned?: boolean;
 	replied?: boolean;
+	hasAttachments?: boolean;
 	snoozedUntil?: string | null;
 	threadId: string | null;
 	createdAt: string;

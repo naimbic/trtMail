@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, Inbox, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,7 +34,7 @@ import {
 	runBulkMessageAction,
 } from "./utils";
 
-const pageSize = 25;
+const pageSize = 20;
 
 function MessageListRow({
 	message,
@@ -58,6 +59,10 @@ function MessageListRow({
 	const unread = rowMessage.direction === "inbound" && !rowMessage.read;
 	const draggable = config.folder === "inbox" && message.direction === "inbound";
 	const party = getMessageParty(rowMessage, config.folder, currentAccountName);
+	const partyEmail = getEmailAddress(
+		config.folder === "sent" || config.folder === "drafts" ? message.toAddr : message.fromAddr,
+	);
+	const showPartyEmail = !!partyEmail && partyEmail.toLowerCase() !== party.toLowerCase();
 	const preview = getMessagePreview(rowMessage, config.folder);
 	const href = `${config.hrefPrefix}/${message.id}`;
 	const navigation = useMessageNavigation(href, rowMessage);
@@ -111,6 +116,9 @@ function MessageListRow({
 							unread ? "font-semibold text-neutral-900" : "text-neutral-700"
 						}`}
 					>
+						{rowMessage.hasAttachments && (
+							<Paperclip className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-neutral-400" aria-label="Has attachment" />
+						)}
 						{rowMessage.replied && (
 							<Reply className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-blue-600" aria-label="Replied" />
 						)}
@@ -142,51 +150,62 @@ function MessageListRow({
 	}
 
 	const className =
-		`group relative grid min-h-12 w-full grid-cols-[24px_32px_minmax(160px,240px)_1fr_auto] items-center gap-3 px-6 text-left text-sm hover:z-10 hover:bg-[#f2f6fc] hover:shadow-sm ${
+		`group relative flex min-h-16 w-full items-start gap-3 px-6 py-3 text-left text-sm hover:z-10 hover:bg-[#f2f6fc] hover:shadow-sm ${
 			active || selected ? "bg-blue-50" : ""
 		} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
 	const content = (
 		<>
-			{config.folder === "inbox" && message.direction === "inbound" && (
-				<Tooltip label={starred ? "Starred" : "Not starred"}>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onClick={(event) => {
-							event.preventDefault();
-							event.stopPropagation();
-							void toggleMessageStar(message.id).then((result) => setStarred(result.starred));
-						}}
-						aria-label={starred ? "Starred" : "Not starred"}
-					>
-						<Icon className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : "text-neutral-300"}`} />
-					</Button>
-				</Tooltip>
-			)}
-			{(config.folder !== "inbox" || message.direction !== "inbound") && (
-				<Icon className="h-4 w-4 text-neutral-300" />
-			)}
-			<span className={getMessagePartyClassName(rowMessage, config.folder)}>
-				{party}
-			</span>
-			<span className="truncate text-neutral-700">
-				{rowMessage.replied && (
-					<Reply className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-blue-600" aria-label="Replied" />
+			<span className="mt-0.5 shrink-0">
+				{config.folder === "inbox" && message.direction === "inbound" ? (
+					<Tooltip label={starred ? "Starred" : "Not starred"}>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								void toggleMessageStar(message.id).then((result) => setStarred(result.starred));
+							}}
+							aria-label={starred ? "Starred" : "Not starred"}
+						>
+							<Icon className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : "text-neutral-300"}`} />
+						</Button>
+					</Tooltip>
+				) : (
+					<Icon className="h-4 w-4 text-neutral-300" />
 				)}
-				<span className={unread ? "font-bold text-neutral-900" : ""}>
-					{rowMessage.subject ?? "(no subject)"}
-				</span>
-				<span className="text-neutral-500"> - {getMessagePreview(rowMessage, config.folder)}</span>
 			</span>
-			<time
-				dateTime={message.createdAt}
-				className={`min-w-[96px] whitespace-nowrap text-right text-xs group-hover:opacity-0 ${
-					unread ? "font-semibold text-neutral-800" : "text-neutral-500"
+			<span className="min-w-0 flex-1">
+				{/* Line 1 — sender name + email + attachment / replied markers */}
+				<span className="flex items-center gap-2">
+					<span className={`truncate ${unread ? "font-bold text-neutral-900" : "font-medium text-neutral-800"}`}>
+						{party}
+					</span>
+					{showPartyEmail && <span className="truncate text-xs text-neutral-400">{partyEmail}</span>}
+					{rowMessage.hasAttachments && (
+						<Paperclip className="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-label="Has attachment" />
+					)}
+					{rowMessage.replied && (
+						<Reply className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Replied" />
+					)}
+				</span>
+				{/* Line 2 — subject + preview */}
+				<span className="mt-0.5 block truncate text-sm">
+					<span className={unread ? "font-semibold text-neutral-900" : "text-neutral-700"}>
+						{rowMessage.subject ?? "(no subject)"}
+					</span>
+					<span className="text-neutral-500"> — {preview}</span>
+				</span>
+			</span>
+			{/* Received date/time in a small box */}
+			<span
+				className={`mt-0.5 shrink-0 rounded-md px-2 py-1 text-[11px] tabular-nums group-hover:opacity-0 ${
+					unread ? "bg-blue-50 font-semibold text-blue-700" : "bg-neutral-100 text-neutral-500"
 				}`}
 			>
 				{formatMessageListTimestamp(message.createdAt)}
-			</time>
+			</span>
 		</>
 	);
 
