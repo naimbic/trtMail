@@ -49,25 +49,27 @@ function AttachmentBadge() {
 }
 
 function GroupToggle({ group }: { group: MessageGroupInfo }) {
+	const more = group.count - 1;
 	return (
 		<button
 			type="button"
 			aria-expanded={group.expanded}
-			aria-label={group.expanded ? "Collapse earlier emails" : `Show ${group.count - 1} earlier emails`}
-			title={group.expanded ? "Collapse" : `${group.count - 1} earlier from this sender`}
+			aria-label={group.expanded ? "Hide earlier emails" : `Show ${more} earlier emails from this sender`}
 			onClick={(event) => {
 				event.preventDefault();
 				event.stopPropagation();
 				group.onToggle();
 			}}
-			className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] font-medium tabular-nums transition-colors ${
-				group.unreadCount > 0
-					? "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
-					: "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+			className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold shadow-sm transition-colors ${
+				group.expanded
+					? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+					: group.unreadCount > 0
+						? "border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+						: "border-neutral-300 bg-white text-neutral-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
 			}`}
 		>
-			{group.count}
-			<ChevronDown className={`h-3 w-3 transition-transform ${group.expanded ? "rotate-180" : ""}`} />
+			{group.expanded ? "Hide" : `+${more} earlier`}
+			<ChevronDown className={`h-3.5 w-3.5 transition-transform ${group.expanded ? "rotate-180" : ""}`} />
 		</button>
 	);
 }

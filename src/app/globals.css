@@ -167,9 +167,14 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 .mail-sidebar .mail-nav-active:after { display:none; }
 .mail-sidebar .mail-nav-active:not(.mail-nav-collapsed):before { content:""; position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:0 3px 3px 0; background:#2f6fe4; }
 .mail-sidebar .mail-nav-active svg { color:#2f6fe4; }
-.mail-sidebar .mail-compose { background:linear-gradient(135deg,#2f74ee,#1f56c4); box-shadow:0 6px 14px #2468dc2e; min-height:46px; border-radius:12px; font-weight:600; transition:transform .15s,box-shadow .15s; }
-.mail-sidebar .mail-compose:hover { background:linear-gradient(135deg,#2a6be0,#1b4eb3); transform:translateY(-1px); box-shadow:0 8px 18px #2468dc3a; }
-.mail-sidebar .mail-compose svg { color:#fff !important; }
+.mail-sidebar .mail-compose { display:flex; align-items:center; gap:10px; width:100%; min-height:48px; padding:0 14px 0 8px; margin-bottom:16px; border-radius:14px; background:#1d4ed8; color:#fff !important; font-size:14px; font-weight:650; letter-spacing:.01em; box-shadow:0 1px 0 #ffffff33 inset,0 8px 18px #1d4ed82e; transition:background .15s,transform .15s,box-shadow .15s; }
+.mail-sidebar .mail-compose:hover { background:#1e40af; color:#fff !important; transform:translateY(-1px); box-shadow:0 1px 0 #ffffff33 inset,0 10px 22px #1d4ed84a; }
+.mail-sidebar .mail-compose:active { transform:none; }
+.mail-sidebar .mail-compose span, .mail-sidebar .mail-compose:hover span { color:#fff !important; flex:1 1 auto; text-align:left; }
+.mail-sidebar .mail-compose svg, .mail-sidebar .mail-compose:hover svg { box-sizing:content-box; padding:7px; border-radius:10px; background:#ffffff26; color:#fff !important; }
+.mail-sidebar .mail-compose:hover svg { background:#ffffff3d; }
+.mail-sidebar .mail-compose.mail-nav-collapsed { width:44px; height:44px; padding:0; justify-content:center; }
+.mail-sidebar .mail-compose.mail-nav-collapsed svg { padding:0; background:none; }
 .mail-nav-heading, .mail-sidebar p[class*="uppercase"] { margin:16px 0 6px; }
 .mail-nav-count { margin-right:2px; min-width:22px; padding:1px 7px; border-radius:999px; background:#2f6fe4; color:#fff !important; font-size:11px; font-weight:650; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .mail-sidebar .mail-nav-active .mail-nav-count { background:#1f56c4; }
