@@ -82,7 +82,7 @@ export function NavItem({ link }: { link: NavLink }) {
         />
         {!minimal && <span className="flex-1">{link.label}</span>}
         {!minimal && typeof link.count === "number" && link.count > 0 && (
-          <span className="ml-auto mr-3 rounded-full px-2 py-0.5 text-sm font-semibold text-neutral-700">
+          <span className="mail-nav-count ml-auto">
             {link.count > 99 ? "99+" : link.count}
           </span>
         )}
@@ -154,7 +154,7 @@ export function NavItem({ link }: { link: NavLink }) {
         />
         {!minimal && <span className="flex-1">{link.label}</span>}
         {!minimal && typeof link.count === "number" && link.count > 0 && (
-          <span className="ml-auto mr-3 rounded-full px-2 py-0.5 text-sm font-semibold text-neutral-700">
+          <span className="mail-nav-count ml-auto">
             {link.count > 99 ? "99+" : link.count}
           </span>
         )}
