@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -22,7 +22,8 @@ import { BulkMessageToolbar } from "./bulk-message-toolbar";
 import { MessageListRowActions } from "./message-list-row-actions";
 import { dispatchMessageCountsDelta, toggleMessagePin, toggleMessageStar } from "./message-list-row-actions-utils";
 import { MessageNavigationProgress, useMessageNavigation } from "./message-navigation";
-import type { MessageFolderPageProps, MessageListRowProps } from "./types";
+import type { Message } from "@/hooks/types";
+import type { MessageFolderConfig, MessageFolderPageProps, MessageGroupInfo, MessageListRowProps } from "./types";
 import {
 	formatMessageListTimestamp,
 	getPageRange,
@@ -36,6 +37,67 @@ import {
 
 const pageSize = 20;
 
+function AttachmentBadge() {
+	return (
+		<span
+			className="inline-flex shrink-0 items-center rounded-full bg-indigo-50 p-1 text-indigo-600 ring-1 ring-indigo-100"
+			title="Has attachment"
+		>
+			<Paperclip className="h-3 w-3" aria-label="Has attachment" />
+		</span>
+	);
+}
+
+function GroupToggle({ group }: { group: MessageGroupInfo }) {
+	return (
+		<button
+			type="button"
+			aria-expanded={group.expanded}
+			aria-label={group.expanded ? "Collapse earlier emails" : `Show ${group.count - 1} earlier emails`}
+			title={group.expanded ? "Collapse" : `${group.count - 1} earlier from this sender`}
+			onClick={(event) => {
+				event.preventDefault();
+				event.stopPropagation();
+				group.onToggle();
+			}}
+			className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] font-medium tabular-nums transition-colors ${
+				group.unreadCount > 0
+					? "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+					: "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
+			}`}
+		>
+			{group.count}
+			<ChevronDown className={`h-3 w-3 transition-transform ${group.expanded ? "rotate-180" : ""}`} />
+		</button>
+	);
+}
+
+function getSenderKey(message: Message, folder: MessageFolderConfig["folder"]) {
+	const address = folder === "sent" ? message.toAddr : message.fromAddr;
+	return (address ? getEmailAddress(address) : "").toLowerCase();
+}
+
+/** Groups messages by sender; groups keep the position of their newest message. */
+function groupMessagesBySender(messages: Message[], folder: MessageFolderConfig["folder"]) {
+	const groups: Array<{ key: string; messages: Message[] }> = [];
+	const index = new Map<string, number>();
+	for (const message of messages) {
+		const key = getSenderKey(message, folder);
+		if (!key) {
+			groups.push({ key: message.id, messages: [message] });
+			continue;
+		}
+		const at = index.get(key);
+		if (at === undefined) {
+			index.set(key, groups.length);
+			groups.push({ key, messages: [message] });
+		} else {
+			groups[at].messages.push(message);
+		}
+	}
+	return groups;
+}
+
 function MessageListRow({
 	message,
 	config,
@@ -46,6 +108,8 @@ function MessageListRow({
 	onSelectedChange,
 	onMessageAction,
 	dragMessageIds,
+	group,
+	nested = false,
 }: MessageListRowProps) {
 	const Icon = config.icon;
 	const { openDraftComposer } = useCompose();
@@ -82,7 +146,7 @@ function MessageListRow({
 	if (compact && config.folder !== "drafts") {
 		return (
 			<div
-				className={`group relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 border-l-2 px-4 py-3 transition-colors ${
+				className={`group relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 border-l-2 py-3 pr-4 transition-colors ${nested ? "bg-neutral-50/60 pl-8" : "pl-4"} ${
 					active
 						? "border-l-blue-600 bg-blue-50"
 						: selected
@@ -104,8 +168,12 @@ function MessageListRow({
 				/>
 				<Link href={href} onClick={onMessageNavigate} className="min-w-0">
 					<span className="flex items-baseline justify-between gap-3">
-						<span className={getMessagePartyClassName(message, config.folder)}>
-							{party}
+						<span className="flex min-w-0 items-center gap-1.5">
+							<span className={getMessagePartyClassName(message, config.folder)}>
+								{party}
+							</span>
+							{group && group.count > 1 && <GroupToggle group={group} />}
+							{group?.hasAttachments && !rowMessage.hasAttachments && <AttachmentBadge />}
 						</span>
 						<span className="shrink-0 text-[11px] text-neutral-400">
 							{formatMessageListTimestamp(message.createdAt)}
@@ -117,7 +185,7 @@ function MessageListRow({
 						}`}
 					>
 						{rowMessage.hasAttachments && (
-							<Paperclip className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-neutral-400" aria-label="Has attachment" />
+							<Paperclip className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-indigo-600" aria-label="Has attachment" />
 						)}
 						{rowMessage.replied && (
 							<Reply className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-blue-600" aria-label="Replied" />
@@ -150,7 +218,7 @@ function MessageListRow({
 	}
 
 	const className =
-		`group relative flex min-h-16 w-full items-start gap-3 px-6 py-3 text-left text-sm hover:z-10 hover:bg-[#f2f6fc] hover:shadow-sm ${
+		`group relative flex min-h-16 w-full items-start gap-3 py-3 pr-6 ${nested ? "bg-neutral-50/60 pl-12" : "pl-6"} text-left text-sm hover:z-10 hover:bg-[#f2f6fc] hover:shadow-sm ${
 			active || selected ? "bg-blue-50" : ""
 		} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
 	const content = (
@@ -183,9 +251,8 @@ function MessageListRow({
 						{party}
 					</span>
 					{showPartyEmail && <span className="truncate text-xs text-neutral-400">{partyEmail}</span>}
-					{rowMessage.hasAttachments && (
-						<Paperclip className="h-3.5 w-3.5 shrink-0 text-neutral-400" aria-label="Has attachment" />
-					)}
+					{(rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
+					{group && group.count > 1 && <GroupToggle group={group} />}
 					{rowMessage.replied && (
 						<Reply className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Replied" />
 					)}
@@ -305,12 +372,39 @@ export function MessageFolderPage({
 	}
 
 	const [unreadOnly, setUnreadOnly] = useState(false);
+	const [groupBySender, setGroupBySender] = useState(true);
+	const [expandedSenders, setExpandedSenders] = useState<Set<string>>(new Set());
+	useEffect(() => {
+		try {
+			if (window.localStorage.getItem("trtmail:group-by-sender") === "0") setGroupBySender(false);
+		} catch {}
+	}, []);
+	function toggleGroupBySender() {
+		setGroupBySender((current) => {
+			try {
+				window.localStorage.setItem("trtmail:group-by-sender", current ? "0" : "1");
+			} catch {}
+			return !current;
+		});
+	}
+	function toggleSender(key: string) {
+		setExpandedSenders((current) => {
+			const next = new Set(current);
+			if (!next.delete(key)) next.add(key);
+			return next;
+		});
+	}
 	const { messages, isLoading, total, limit, updateMessages } = useMessages(config.folder, selectedMailbox?.id, {
 		query,
 		limit: pageSize,
 		offset,
 		read: unreadOnly ? "unread" : "all",
 	}, !mailboxesLoading, config.folderId);
+	const canGroup = groupBySender && config.folder !== "drafts";
+	const senderGroups = useMemo(
+		() => (canGroup ? groupMessagesBySender(messages, config.folder) : []),
+		[canGroup, messages, config.folder],
+	);
 	const { counts } = useMessageCounts(selectedMailbox?.id, !mailboxesLoading);
 	usePageLoading(mailboxesLoading || isLoading);
 	const headerIcons = config.headerIcons ?? [];
@@ -498,6 +592,21 @@ export function MessageFolderPage({
 								<ChevronRight className="h-4 w-4" />
 							</Button>
 						</Tooltip>
+						{config.folder !== "drafts" && (
+							<Tooltip label={groupBySender ? "Grouped by sender (click to ungroup)" : "Group emails by sender"}>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									aria-label="Group emails by sender"
+									aria-pressed={groupBySender}
+									onClick={toggleGroupBySender}
+									className={groupBySender ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : undefined}
+								>
+									<Layers className="h-4 w-4" />
+								</Button>
+							</Tooltip>
+						)}
 						{config.folder === "inbox" && (
 							<Tooltip label={unreadOnly ? "Showing unread emails" : "Show unread emails only"}>
 								<Button
@@ -521,7 +630,26 @@ export function MessageFolderPage({
 			</div>
 
 			<div className="min-h-0 flex-1 divide-y divide-neutral-100 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
-				{messages.map((message) => (
+				{(canGroup
+					? senderGroups.flatMap((group) => {
+							const [latest, ...older] = group.messages;
+							const expanded = expandedSenders.has(group.key);
+							const info: MessageGroupInfo | undefined = older.length
+								? {
+										count: group.messages.length,
+										unreadCount: group.messages.filter((m) => m.direction === "inbound" && !m.read).length,
+										hasAttachments: group.messages.some((m) => m.hasAttachments),
+										expanded,
+										onToggle: () => toggleSender(group.key),
+									}
+								: undefined;
+							return [
+								{ message: latest, group: info, nested: false },
+								...(expanded ? older.map((message) => ({ message, group: undefined, nested: true })) : []),
+							];
+						})
+					: messages.map((message) => ({ message, group: undefined, nested: false }))
+				).map(({ message, group, nested }) => (
 					<MessageListRow
 						key={message.id}
 						message={message}
@@ -533,6 +661,8 @@ export function MessageFolderPage({
 						onSelectedChange={updateSelectedMessage}
 						onMessageAction={(messageId, action) => runBulkMessageAction([messageId], resolveAction(action), action !== "read" && action !== "unread")}
 						dragMessageIds={selectedIds.includes(message.id) ? selectedIds : [message.id]}
+						group={group}
+						nested={nested}
 					/>
 				))}
 				{!isLoading && messages.length === 0 && (

@@ -26,6 +26,17 @@ export type MessageListRowProps = {
 	onMessageAction: (messageId: string, action: RowMessageAction) => Promise<void>;
 	dragMessageIds: string[];
 	reminder?: { status: string; dueAt: number };
+	group?: MessageGroupInfo;
+	/** Older message shown nested under its sender's latest message. */
+	nested?: boolean;
+};
+
+export type MessageGroupInfo = {
+	count: number;
+	unreadCount: number;
+	hasAttachments: boolean;
+	expanded: boolean;
+	onToggle: () => void;
 };
 
 export type RowMessageAction = "archive" | "trash" | "read" | "unread";
