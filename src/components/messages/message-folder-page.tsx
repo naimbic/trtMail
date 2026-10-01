@@ -48,6 +48,44 @@ function AttachmentBadge() {
 	);
 }
 
+const avatarColors = [
+	"bg-blue-100 text-blue-700",
+	"bg-emerald-100 text-emerald-700",
+	"bg-amber-100 text-amber-700",
+	"bg-rose-100 text-rose-700",
+	"bg-violet-100 text-violet-700",
+	"bg-cyan-100 text-cyan-700",
+	"bg-orange-100 text-orange-700",
+];
+
+function SenderAvatar({ name, seed }: { name: string; seed: string }) {
+	const letters = name
+		.replace(/[^\p{L}\p{N}\s]/gu, "")
+		.trim()
+		.split(/\s+/)
+		.slice(0, 2)
+		.map((part) => part[0]?.toUpperCase() ?? "")
+		.join("");
+	let hash = 0;
+	for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+	return (
+		<span
+			aria-hidden
+			className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${avatarColors[hash % avatarColors.length]}`}
+		>
+			{letters || "?"}
+		</span>
+	);
+}
+
+function getRowTone({ nested, groupOpen, unread, highlighted }: { nested: boolean; groupOpen: boolean; unread: boolean; highlighted: boolean }) {
+	if (highlighted) return "border-l-4 border-l-blue-600 bg-blue-100/70";
+	if (nested) return "border-l-4 border-l-slate-300 bg-slate-100 hover:bg-slate-200/70";
+	if (groupOpen) return "border-l-4 border-l-blue-600 bg-sky-50 hover:bg-sky-100/70";
+	if (unread) return "border-l-4 border-l-blue-500 bg-white hover:bg-blue-50/60";
+	return "border-l-4 border-l-transparent bg-slate-50/80 hover:bg-white";
+}
+
 function GroupToggle({ group }: { group: MessageGroupInfo }) {
 	const more = group.count - 1;
 	return (
@@ -148,13 +186,12 @@ function MessageListRow({
 	if (compact && config.folder !== "drafts") {
 		return (
 			<div
-				className={`group relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 border-l-2 py-3 pr-4 transition-colors ${nested ? "bg-neutral-50/60 pl-8" : "pl-4"} ${
-					active
-						? "border-l-blue-600 bg-blue-50"
-						: selected
-							? "border-l-transparent bg-neutral-50"
-							: "border-l-transparent hover:bg-neutral-50"
-				} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+				className={`group relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 py-3 pr-4 transition-colors ${nested ? "pl-8" : "pl-4"} ${getRowTone({
+					nested,
+					groupOpen: !!group?.expanded,
+					unread,
+					highlighted: active || selected,
+				})} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
 				draggable={draggable}
 				onDragStart={(event) => {
 					if (!draggable) return;
@@ -219,13 +256,15 @@ function MessageListRow({
 		);
 	}
 
-	const className =
-		`group relative flex min-h-16 w-full items-start gap-3 py-3 pr-6 ${nested ? "bg-neutral-50/60 pl-12" : "pl-6"} text-left text-sm hover:z-10 hover:bg-[#f2f6fc] hover:shadow-sm ${
-			active || selected ? "bg-blue-50" : ""
-		} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
+	const className = `group relative flex min-h-[76px] w-full items-start gap-3 py-3 pr-5 text-left text-sm transition-colors ${nested ? "pl-6" : "pl-4"} ${getRowTone({
+		nested,
+		groupOpen: !!group?.expanded,
+		unread,
+		highlighted: active || selected,
+	})} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
 	const content = (
 		<>
-			<span className="mt-0.5 shrink-0">
+			<span className="mt-1 shrink-0">
 				{config.folder === "inbox" && message.direction === "inbound" ? (
 					<Tooltip label={starred ? "Starred" : "Not starred"}>
 						<Button
@@ -246,31 +285,30 @@ function MessageListRow({
 					<Icon className="h-4 w-4 text-neutral-300" />
 				)}
 			</span>
+			{nested ? <span className="w-9 shrink-0" /> : <SenderAvatar name={party} seed={partyEmail || party} />}
 			<span className="min-w-0 flex-1">
-				{/* Line 1 — sender name + email + attachment / replied markers */}
+				{/* Line 1 — sender, address, markers, group toggle */}
 				<span className="flex items-center gap-2">
-					<span className={`truncate ${unread ? "font-bold text-neutral-900" : "font-medium text-neutral-800"}`}>
+					<span className={`truncate text-[15px] ${unread ? "font-bold text-neutral-900" : "font-medium text-neutral-700"}`}>
 						{party}
 					</span>
-					{showPartyEmail && <span className="truncate text-xs text-neutral-400">{partyEmail}</span>}
-					{(rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
-					{group && group.count > 1 && <GroupToggle group={group} />}
+					{showPartyEmail && !nested && <span className="hidden truncate text-xs text-neutral-400 xl:inline">{partyEmail}</span>}
 					{rowMessage.replied && (
 						<Reply className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Replied" />
 					)}
+					{(rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
+					{group && group.count > 1 && <GroupToggle group={group} />}
 				</span>
-				{/* Line 2 — subject + preview */}
-				<span className="mt-0.5 block truncate text-sm">
-					<span className={unread ? "font-semibold text-neutral-900" : "text-neutral-700"}>
-						{rowMessage.subject ?? "(no subject)"}
-					</span>
-					<span className="text-neutral-500"> — {preview}</span>
+				{/* Line 2 — subject */}
+				<span className={`mt-0.5 block truncate text-sm ${unread ? "font-semibold text-neutral-900" : "text-neutral-700"}`}>
+					{rowMessage.subject ?? "(no subject)"}
 				</span>
+				{/* Line 3 — preview */}
+				<span className="block truncate text-[13px] leading-5 text-neutral-500">{preview}</span>
 			</span>
-			{/* Received date/time in a small box */}
 			<span
-				className={`mt-0.5 shrink-0 rounded-md px-2 py-1 text-[11px] tabular-nums group-hover:opacity-0 ${
-					unread ? "bg-blue-50 font-semibold text-blue-700" : "bg-neutral-100 text-neutral-500"
+				className={`mt-0.5 shrink-0 text-xs tabular-nums group-hover:opacity-0 ${
+					unread ? "font-semibold text-blue-700" : "text-neutral-500"
 				}`}
 			>
 				{formatMessageListTimestamp(message.createdAt)}
@@ -631,7 +669,7 @@ export function MessageFolderPage({
 				)}
 			</div>
 
-			<div className="min-h-0 flex-1 divide-y divide-neutral-100 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
+			<div className="min-h-0 flex-1 divide-y divide-slate-200/70 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
 				{(canGroup
 					? senderGroups.flatMap((group) => {
 							const [latest, ...older] = group.messages;
