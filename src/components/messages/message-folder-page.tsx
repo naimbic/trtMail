@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { Archive, ChevronDown, ChevronLeft, ChevronRight, Layers, Mail, MailOpen, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, MailOpen, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -672,6 +672,21 @@ export function MessageFolderPage({
 								</Button>
 							</Tooltip>
 						)}
+						{config.folder === "inbox" && (
+							<Tooltip label={unreadOnly ? "Showing unread emails" : "Show unread emails only"}>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									aria-label="Show unread emails only"
+									aria-pressed={unreadOnly}
+									onClick={() => setUnreadOnly((current) => !current)}
+									className={unreadOnly ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : undefined}
+								>
+									<ListFilter className="h-4 w-4" />
+								</Button>
+							</Tooltip>
+						)}
 						{!compact && headerIcons.map((Icon, index) => (
 							<Icon key={index} className="h-4 w-4" />
 						))}
@@ -680,9 +695,8 @@ export function MessageFolderPage({
 			</div>
 
 			{config.folder !== "drafts" && (
-				<div className={`flex shrink-0 items-center gap-2 border-b border-neutral-100 py-2 ${compact ? "px-4" : "px-6"}`}>
+				<div className={`flex w-full shrink-0 items-stretch gap-2 border-b border-neutral-100 bg-white py-2 ${compact ? "px-4" : "px-6"}`}>
 					{([
-						{ label: "Unread", icon: Mail, on: unreadOnly, set: setUnreadOnly, show: config.folder === "inbox" },
 						{ label: "Attachments", icon: Paperclip, on: attachmentsOnly, set: setAttachmentsOnly, show: true },
 						{ label: "Starred", icon: Star, on: starredOnly, set: setStarredOnly, show: config.folder !== "starred" },
 					] as const).filter((chip) => chip.show).map((chip) => (
@@ -691,7 +705,7 @@ export function MessageFolderPage({
 							type="button"
 							aria-pressed={chip.on}
 							onClick={() => chip.set((current: boolean) => !current)}
-							className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+							className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
 								chip.on
 									? "border-blue-600 bg-blue-600 text-white"
 									: "border-neutral-200 bg-white text-neutral-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
@@ -701,15 +715,14 @@ export function MessageFolderPage({
 							{chip.label}
 						</button>
 					))}
-					{(unreadOnly || attachmentsOnly || starredOnly) && (
+					{(attachmentsOnly || starredOnly) && (
 						<button
 							type="button"
 							onClick={() => {
-								setUnreadOnly(false);
 								setAttachmentsOnly(false);
 								setStarredOnly(false);
 							}}
-							className="text-xs text-neutral-500 underline-offset-2 hover:text-blue-700 hover:underline"
+							className="shrink-0 px-2 text-xs text-neutral-500 underline-offset-2 hover:text-blue-700 hover:underline"
 						>
 							Clear
 						</button>
