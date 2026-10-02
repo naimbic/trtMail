@@ -687,48 +687,42 @@ export function MessageFolderPage({
 								</Button>
 							</Tooltip>
 						)}
+						{config.folder !== "drafts" && (
+							<Tooltip label={attachmentsOnly ? "Showing emails with attachments" : "Show emails with attachments only"}>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									aria-label="Show emails with attachments only"
+									aria-pressed={attachmentsOnly}
+									onClick={() => setAttachmentsOnly((current) => !current)}
+									className={attachmentsOnly ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-100" : undefined}
+								>
+									<Paperclip className="h-4 w-4" />
+								</Button>
+							</Tooltip>
+						)}
+						{config.folder !== "drafts" && config.folder !== "starred" && (
+							<Tooltip label={starredOnly ? "Showing starred emails" : "Show starred emails only"}>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									aria-label="Show starred emails only"
+									aria-pressed={starredOnly}
+									onClick={() => setStarredOnly((current) => !current)}
+									className={starredOnly ? "bg-amber-100 text-amber-700 hover:bg-amber-100" : undefined}
+								>
+									<Star className={`h-4 w-4 ${starredOnly ? "fill-amber-400" : ""}`} />
+								</Button>
+							</Tooltip>
+						)}
 						{!compact && headerIcons.map((Icon, index) => (
 							<Icon key={index} className="h-4 w-4" />
 						))}
 					</div>
 				)}
 			</div>
-
-			{config.folder !== "drafts" && (
-				<div className={`flex w-full shrink-0 items-stretch gap-2 border-b border-neutral-100 bg-white py-2 ${compact ? "px-4" : "px-6"}`}>
-					{([
-						{ label: "Attachments", icon: Paperclip, on: attachmentsOnly, set: setAttachmentsOnly, show: true },
-						{ label: "Starred", icon: Star, on: starredOnly, set: setStarredOnly, show: config.folder !== "starred" },
-					] as const).filter((chip) => chip.show).map((chip) => (
-						<button
-							key={chip.label}
-							type="button"
-							aria-pressed={chip.on}
-							onClick={() => chip.set((current: boolean) => !current)}
-							className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-								chip.on
-									? "border-blue-600 bg-blue-600 text-white"
-									: "border-neutral-200 bg-white text-neutral-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-							}`}
-						>
-							<chip.icon className="h-3.5 w-3.5" />
-							{chip.label}
-						</button>
-					))}
-					{(attachmentsOnly || starredOnly) && (
-						<button
-							type="button"
-							onClick={() => {
-								setAttachmentsOnly(false);
-								setStarredOnly(false);
-							}}
-							className="shrink-0 px-2 text-xs text-neutral-500 underline-offset-2 hover:text-blue-700 hover:underline"
-						>
-							Clear
-						</button>
-					)}
-				</div>
-			)}
 
 			<div className="min-h-0 flex-1 divide-y divide-slate-200/70 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
 				{(canGroup
