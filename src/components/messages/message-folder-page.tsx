@@ -15,6 +15,8 @@ import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { usePageLoading } from "@/components/page-loading";
 import { useMessageCounts } from "@/hooks/use-message-counts";
 import { useMessages } from "@/hooks/use-messages";
+import { useDisplayPrefs } from "@/lib/display-prefs";
+import type { DisplayPrefs } from "@/lib/display-prefs";
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import { setMessageDragData } from "@/lib/messages/drag-utils";
 import { emitUndo, moveMessagesToInbox } from "@/lib/messages/undo";
@@ -78,10 +80,11 @@ function SenderAvatar({ name, seed }: { name: string; seed: string }) {
 	);
 }
 
-function getRowTone({ nested, groupOpen, unread, highlighted }: { nested: boolean; groupOpen: boolean; unread: boolean; highlighted: boolean }) {
+function getRowTone({ nested, groupOpen, unread, highlighted, unreadAccent }: { nested: boolean; groupOpen: boolean; unread: boolean; highlighted: boolean; unreadAccent: boolean }) {
 	if (highlighted) return "border-l-4 border-l-blue-600 bg-blue-100/70";
 	if (nested) return "border-l-4 border-l-slate-300 bg-slate-100 hover:bg-slate-200/70";
 	if (groupOpen) return "border-l-4 border-l-blue-600 bg-sky-50 hover:bg-sky-100/70";
+	if (!unreadAccent) return "border-l-4 border-l-transparent bg-white hover:bg-slate-50";
 	if (unread) return "border-l-4 border-l-blue-500 bg-white hover:bg-blue-50/60";
 	return "border-l-4 border-l-transparent bg-slate-50/80 hover:bg-white";
 }
@@ -150,7 +153,8 @@ function MessageListRow({
 	dragMessageIds,
 	group,
 	nested = false,
-}: MessageListRowProps) {
+	prefs,
+}: MessageListRowProps & { prefs: DisplayPrefs }) {
 	const Icon = config.icon;
 	const { openDraftComposer } = useCompose();
 	const [read, setRead] = useState(message.read);
@@ -191,6 +195,7 @@ function MessageListRow({
 					groupOpen: !!group?.expanded,
 					unread,
 					highlighted: active || selected,
+					unreadAccent: prefs.unreadAccent,
 				})} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
 				draggable={draggable}
 				onDragStart={(event) => {
@@ -212,7 +217,7 @@ function MessageListRow({
 								{party}
 							</span>
 							{group && group.count > 1 && <GroupToggle group={group} />}
-							{group?.hasAttachments && !rowMessage.hasAttachments && <AttachmentBadge />}
+							{prefs.attachmentBadge && group?.hasAttachments && !rowMessage.hasAttachments && <AttachmentBadge />}
 						</span>
 						<span className="shrink-0 text-[11px] text-neutral-400">
 							{formatMessageListTimestamp(message.createdAt)}
@@ -223,7 +228,7 @@ function MessageListRow({
 							unread ? "font-semibold text-neutral-900" : "text-neutral-700"
 						}`}
 					>
-						{rowMessage.hasAttachments && (
+						{prefs.attachmentBadge && rowMessage.hasAttachments && (
 							<Paperclip className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-indigo-600" aria-label="Has attachment" />
 						)}
 						{rowMessage.replied && (
@@ -231,9 +236,11 @@ function MessageListRow({
 						)}
 						{message.subject ?? "(no subject)"}
 					</span>
-					<span className="mt-0.5 block truncate text-xs leading-5 text-neutral-500">
-						{preview}
-					</span>
+					{prefs.showPreview && (
+						<span className="mt-0.5 block truncate text-xs leading-5 text-neutral-500">
+							{preview}
+						</span>
+					)}
 				</Link>
 				<div className="pointer-events-none absolute right-3 top-2 z-10 flex items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
 					<Tooltip label={pinned ? "Unpin" : "Pin"}>
@@ -256,11 +263,12 @@ function MessageListRow({
 		);
 	}
 
-	const className = `group relative flex min-h-[76px] w-full items-start gap-3 py-3 pr-5 text-left text-sm transition-colors ${nested ? "pl-6" : "pl-4"} ${getRowTone({
+	const className = `group relative flex w-full items-start gap-3 ${prefs.compactRows ? "min-h-[56px] py-1.5" : "min-h-[76px] py-3"} pr-5 text-left text-sm transition-colors ${nested ? "pl-6" : "pl-4"} ${getRowTone({
 		nested,
 		groupOpen: !!group?.expanded,
 		unread,
 		highlighted: active || selected,
+		unreadAccent: prefs.unreadAccent,
 	})} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
 	const content = (
 		<>
@@ -285,18 +293,18 @@ function MessageListRow({
 					<Icon className="h-4 w-4 text-neutral-300" />
 				)}
 			</span>
-			{nested ? <span className="w-9 shrink-0" /> : <SenderAvatar name={party} seed={partyEmail || party} />}
+			{!prefs.senderAvatars ? null : nested ? <span className="w-9 shrink-0" /> : <SenderAvatar name={party} seed={partyEmail || party} />}
 			<span className="min-w-0 flex-1">
 				{/* Line 1 — sender, address, markers, group toggle */}
 				<span className="flex items-center gap-2">
 					<span className={`truncate text-[15px] ${unread ? "font-bold text-neutral-900" : "font-medium text-neutral-700"}`}>
 						{party}
 					</span>
-					{showPartyEmail && !nested && <span className="hidden truncate text-xs text-neutral-400 xl:inline">{partyEmail}</span>}
+					{prefs.showSenderEmail && showPartyEmail && !nested && <span className="hidden truncate text-xs text-neutral-400 xl:inline">{partyEmail}</span>}
 					{rowMessage.replied && (
 						<Reply className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Replied" />
 					)}
-					{(rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
+					{prefs.attachmentBadge && (rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
 					{group && group.count > 1 && <GroupToggle group={group} />}
 				</span>
 				{/* Line 2 — subject */}
@@ -304,7 +312,7 @@ function MessageListRow({
 					{rowMessage.subject ?? "(no subject)"}
 				</span>
 				{/* Line 3 — preview */}
-				<span className="block truncate text-[13px] leading-5 text-neutral-500">{preview}</span>
+				{prefs.showPreview && <span className="block truncate text-[13px] leading-5 text-neutral-500">{preview}</span>}
 			</span>
 			<span
 				className={`mt-0.5 shrink-0 text-xs tabular-nums group-hover:opacity-0 ${
@@ -412,20 +420,11 @@ export function MessageFolderPage({
 	}
 
 	const [unreadOnly, setUnreadOnly] = useState(false);
-	const [groupBySender, setGroupBySender] = useState(true);
+	const { prefs, setPref } = useDisplayPrefs();
+	const groupBySender = prefs.groupBySender;
 	const [expandedSenders, setExpandedSenders] = useState<Set<string>>(new Set());
-	useEffect(() => {
-		try {
-			if (window.localStorage.getItem("trtmail:group-by-sender") === "0") setGroupBySender(false);
-		} catch {}
-	}, []);
 	function toggleGroupBySender() {
-		setGroupBySender((current) => {
-			try {
-				window.localStorage.setItem("trtmail:group-by-sender", current ? "0" : "1");
-			} catch {}
-			return !current;
-		});
+		setPref("groupBySender", !groupBySender);
 	}
 	function toggleSender(key: string) {
 		setExpandedSenders((current) => {
@@ -703,6 +702,7 @@ export function MessageFolderPage({
 						dragMessageIds={selectedIds.includes(message.id) ? selectedIds : [message.id]}
 						group={group}
 						nested={nested}
+						prefs={prefs}
 					/>
 				))}
 				{!isLoading && messages.length === 0 && (

@@ -26,6 +26,10 @@ export const settingsNavSections: SettingsNavSection[] = [
 				label: "Auto-Reply",
 			},
 			{
+				href: "/settings/appearance",
+				label: "Appearance",
+			},
+			{
 				href: "/settings/notifications",
 				label: "Notifications",
 			},
