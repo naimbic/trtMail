@@ -129,9 +129,9 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 						<DialogDescription>Hide this email from the inbox until the time you choose.</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4">
-						<div className="grid gap-2 sm:grid-cols-3">
+						<div className="grid grid-cols-2 gap-2">
 							{snoozePresets.map((preset) => (
-								<Button key={preset.label} type="button" variant="outline" size="sm" onClick={() => setSnoozedUntil(preset.value)}>
+								<Button key={preset.label} type="button" variant={snoozedUntil === preset.value ? "default" : "outline"} size="sm" onClick={() => setSnoozedUntil(preset.value)}>
 									{preset.label}
 								</Button>
 							))}

@@ -22,7 +22,7 @@ export type MessageListRowProps = {
 	active?: boolean;
 	compact?: boolean;
 	currentAccountName?: string;
-	onSelectedChange: (messageId: string, selected: boolean) => void;
+	onSelectedChange: (messageId: string, selected: boolean, groupIds?: string[]) => void;
 	onMessageAction: (messageId: string, action: RowMessageAction) => Promise<void>;
 	dragMessageIds: string[];
 	reminder?: { status: string; dueAt: number };
@@ -37,6 +37,8 @@ export type MessageGroupInfo = {
 	hasAttachments: boolean;
 	expanded: boolean;
 	onToggle: () => void;
+	messageIds: string[];
+	onAction: (action: "read" | "archive") => void;
 };
 
 export type RowMessageAction = "archive" | "trash" | "read" | "unread";

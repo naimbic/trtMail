@@ -12,16 +12,21 @@ export function formatSnoozeDateTime(date: Date): string {
 }
 
 export function getSnoozePresets(now = new Date()): SnoozePreset[] {
+	const laterToday = new Date(now.getTime() + 3 * 60 * 60_000);
 	const tomorrow = new Date(now);
 	tomorrow.setDate(tomorrow.getDate() + 1);
+	tomorrow.setHours(8, 0, 0, 0);
 	const nextWeek = new Date(now);
-	nextWeek.setDate(nextWeek.getDate() + 7);
+	nextWeek.setDate(nextWeek.getDate() + ((8 - nextWeek.getDay()) % 7 || 7));
+	nextWeek.setHours(8, 0, 0, 0);
 	const nextMonth = new Date(now);
 	nextMonth.setMonth(nextMonth.getMonth() + 1);
+	nextMonth.setHours(8, 0, 0, 0);
 
 	return [
-		{ label: "Tomorrow", value: formatSnoozeDateTime(tomorrow) },
-		{ label: "Next week", value: formatSnoozeDateTime(nextWeek) },
+		{ label: "Later today", value: formatSnoozeDateTime(laterToday) },
+		{ label: "Tomorrow 8:00", value: formatSnoozeDateTime(tomorrow) },
+		{ label: "Next Monday 8:00", value: formatSnoozeDateTime(nextWeek) },
 		{ label: "Next month", value: formatSnoozeDateTime(nextMonth) },
 	];
 }

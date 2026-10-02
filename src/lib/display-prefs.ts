@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export type DisplayPrefs = {
 	groupBySender: boolean;
+	autoExpandUnread: boolean;
 	senderAvatars: boolean;
 	attachmentBadge: boolean;
 	showPreview: boolean;
@@ -16,6 +17,7 @@ export type DisplayPrefs = {
 
 export const DEFAULT_DISPLAY_PREFS: DisplayPrefs = {
 	groupBySender: true,
+	autoExpandUnread: false,
 	senderAvatars: true,
 	attachmentBadge: true,
 	showPreview: true,

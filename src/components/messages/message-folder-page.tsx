@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, ChevronLeft, ChevronRight, Layers, Mail, MailOpen, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -115,6 +115,24 @@ function GroupToggle({ group }: { group: MessageGroupInfo }) {
 	);
 }
 
+function GroupActions({ group }: { group: MessageGroupInfo }) {
+	const run = (action: "read" | "archive") => (event: MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault();
+		event.stopPropagation();
+		group.onAction(action);
+	};
+	return (
+		<span className="ml-auto hidden shrink-0 items-center gap-1 group-hover:flex">
+			<button type="button" onClick={run("read")} title={`Mark all ${group.count} as read`} className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-neutral-600 hover:border-blue-300 hover:text-blue-700">
+				<MailOpen className="h-3 w-3" /> Read all
+			</button>
+			<button type="button" onClick={run("archive")} title={`Archive all ${group.count}`} className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-neutral-600 hover:border-blue-300 hover:text-blue-700">
+				<Archive className="h-3 w-3" /> Archive all
+			</button>
+		</span>
+	);
+}
+
 function getSenderKey(message: Message, folder: MessageFolderConfig["folder"]) {
 	const address = folder === "sent" ? message.toAddr : message.fromAddr;
 	return (address ? getEmailAddress(address) : "").toLowerCase();
@@ -206,7 +224,7 @@ function MessageListRow({
 				<MessageNavigationProgress progress={navigation.progress} />
 				<Checkbox
 					checked={selected}
-					onChange={(event) => onSelectedChange(message.id, event.target.checked)}
+					onChange={(event) => onSelectedChange(message.id, event.target.checked, group?.messageIds)}
 					className="mt-1 h-4 w-4 rounded border-neutral-300"
 					aria-label={`Select message from ${party}`}
 				/>
@@ -306,6 +324,7 @@ function MessageListRow({
 					)}
 					{prefs.attachmentBadge && (rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
 					{group && group.count > 1 && <GroupToggle group={group} />}
+					{group && group.count > 1 && <GroupActions group={group} />}
 				</span>
 				{/* Line 2 — subject */}
 				<span className={`mt-0.5 block truncate text-sm ${unread ? "font-semibold text-neutral-900" : "text-neutral-700"}`}>
@@ -352,9 +371,9 @@ function MessageListRow({
 			<MessageNavigationProgress progress={navigation.progress} />
 			<Checkbox
 				checked={selected}
-				onChange={(event) => onSelectedChange(message.id, event.target.checked)}
+				onChange={(event) => onSelectedChange(message.id, event.target.checked, group?.messageIds)}
 				className="h-4 w-4 rounded border-neutral-300"
-				aria-label="Select message"
+				aria-label={group ? "Select all emails from this sender" : "Select message"}
 			/>
 			<Link href={href} onClick={onMessageNavigate} className="contents">
 				{content}
@@ -420,6 +439,11 @@ export function MessageFolderPage({
 	}
 
 	const [unreadOnly, setUnreadOnly] = useState(false);
+	const [attachmentsOnly, setAttachmentsOnly] = useState(false);
+	const [starredOnly, setStarredOnly] = useState(false);
+	const effectiveQuery = [query, attachmentsOnly ? "has:attachment" : "", starredOnly ? "is:starred" : ""]
+		.filter(Boolean)
+		.join(" ");
 	const { prefs, setPref } = useDisplayPrefs();
 	const groupBySender = prefs.groupBySender;
 	const [expandedSenders, setExpandedSenders] = useState<Set<string>>(new Set());
@@ -434,7 +458,7 @@ export function MessageFolderPage({
 		});
 	}
 	const { messages, isLoading, total, limit, updateMessages } = useMessages(config.folder, selectedMailbox?.id, {
-		query,
+		query: effectiveQuery,
 		limit: pageSize,
 		offset,
 		read: unreadOnly ? "unread" : "all",
@@ -447,7 +471,7 @@ export function MessageFolderPage({
 	const { counts } = useMessageCounts(selectedMailbox?.id, !mailboxesLoading);
 	usePageLoading(mailboxesLoading || isLoading);
 	const headerIcons = config.headerIcons ?? [];
-	const hasActiveFilters = !!query.trim();
+	const hasActiveFilters = !!effectiveQuery.trim() || unreadOnly;
 	const folderCount = config.folderId
 		? counts.customFolders[config.folderId]
 		: counts.folders[config.folder];
@@ -469,7 +493,7 @@ export function MessageFolderPage({
 	useEffect(() => {
 		setOffset(0);
 		setSelectedMessages([]);
-	}, [query, selectedMailbox?.id, config.folder, config.folderId, unreadOnly]);
+	}, [query, selectedMailbox?.id, config.folder, config.folderId, unreadOnly, attachmentsOnly, starredOnly]);
 
 	useEffect(() => {
 		setSelectedMessages([]);
@@ -485,14 +509,16 @@ export function MessageFolderPage({
 		});
 	}, [config.title, mailboxAddress, mailboxesLoading, titleTotal, titleUnread]);
 
-	function updateSelectedMessage(messageId: string, selected: boolean) {
-		const message = messages.find((item) => item.id === messageId);
-		if (!message) return;
+	function updateSelectedMessage(messageId: string, selected: boolean, groupIds?: string[]) {
+		const ids = new Set(groupIds?.length ? groupIds : [messageId]);
+		const targets = messages.filter((item) => ids.has(item.id));
+		if (targets.length === 0) return;
 
 		setSelectedMessages((current) => {
-			if (!selected) return current.filter((item) => item.id !== messageId);
-			if (current.some((item) => item.id === messageId)) return current;
-			return [...current, { id: message.id, read: message.read }];
+			if (!selected) return current.filter((item) => !ids.has(item.id));
+			const next = new Map(current.map((item) => [item.id, item]));
+			for (const message of targets) next.set(message.id, { id: message.id, read: message.read });
+			return Array.from(next.values());
 		});
 	}
 
@@ -646,21 +672,6 @@ export function MessageFolderPage({
 								</Button>
 							</Tooltip>
 						)}
-						{config.folder === "inbox" && (
-							<Tooltip label={unreadOnly ? "Showing unread emails" : "Show unread emails only"}>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									aria-label="Show unread emails only"
-									aria-pressed={unreadOnly}
-									onClick={() => setUnreadOnly((current) => !current)}
-									className={unreadOnly ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : undefined}
-								>
-									<ListFilter className="h-4 w-4" />
-								</Button>
-							</Tooltip>
-						)}
 						{!compact && headerIcons.map((Icon, index) => (
 							<Icon key={index} className="h-4 w-4" />
 						))}
@@ -668,11 +679,52 @@ export function MessageFolderPage({
 				)}
 			</div>
 
+			{config.folder !== "drafts" && (
+				<div className={`flex shrink-0 items-center gap-2 border-b border-neutral-100 py-2 ${compact ? "px-4" : "px-6"}`}>
+					{([
+						{ label: "Unread", icon: Mail, on: unreadOnly, set: setUnreadOnly, show: config.folder === "inbox" },
+						{ label: "Attachments", icon: Paperclip, on: attachmentsOnly, set: setAttachmentsOnly, show: true },
+						{ label: "Starred", icon: Star, on: starredOnly, set: setStarredOnly, show: config.folder !== "starred" },
+					] as const).filter((chip) => chip.show).map((chip) => (
+						<button
+							key={chip.label}
+							type="button"
+							aria-pressed={chip.on}
+							onClick={() => chip.set((current: boolean) => !current)}
+							className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+								chip.on
+									? "border-blue-600 bg-blue-600 text-white"
+									: "border-neutral-200 bg-white text-neutral-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+							}`}
+						>
+							<chip.icon className="h-3.5 w-3.5" />
+							{chip.label}
+						</button>
+					))}
+					{(unreadOnly || attachmentsOnly || starredOnly) && (
+						<button
+							type="button"
+							onClick={() => {
+								setUnreadOnly(false);
+								setAttachmentsOnly(false);
+								setStarredOnly(false);
+							}}
+							className="text-xs text-neutral-500 underline-offset-2 hover:text-blue-700 hover:underline"
+						>
+							Clear
+						</button>
+					)}
+				</div>
+			)}
+
 			<div className="min-h-0 flex-1 divide-y divide-slate-200/70 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
 				{(canGroup
 					? senderGroups.flatMap((group) => {
 							const [latest, ...older] = group.messages;
-							const expanded = expandedSenders.has(group.key);
+							const hasUnread = group.messages.some((m) => m.direction === "inbound" && !m.read);
+							const toggled = expandedSenders.has(group.key);
+							const expanded = prefs.autoExpandUnread && hasUnread ? !toggled : toggled;
+							const ids = group.messages.map((m) => m.id);
 							const info: MessageGroupInfo | undefined = older.length
 								? {
 										count: group.messages.length,
@@ -680,11 +732,17 @@ export function MessageFolderPage({
 										hasAttachments: group.messages.some((m) => m.hasAttachments),
 										expanded,
 										onToggle: () => toggleSender(group.key),
+										messageIds: ids,
+										onAction: (action) => {
+											void runBulkMessageAction(ids, action, true).then(() => {
+												if (action === "archive") emitUndo(`${ids.length} emails archived`, () => moveMessagesToInbox(ids));
+											});
+										},
 									}
 								: undefined;
 							return [
 								{ message: latest, group: info, nested: false },
-								...(expanded ? older.map((message) => ({ message, group: undefined, nested: true })) : []),
+								...(info?.expanded ? older.map((message) => ({ message, group: undefined, nested: true })) : []),
 							];
 						})
 					: messages.map((message) => ({ message, group: undefined, nested: false }))

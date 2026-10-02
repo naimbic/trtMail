@@ -7,6 +7,7 @@ import type { DisplayPrefs } from "@/lib/display-prefs";
 
 const options: Array<{ key: keyof DisplayPrefs; title: string; description: string }> = [
 	{ key: "groupBySender", title: "Group emails by sender", description: "Show the newest email from each sender with a dropdown for earlier ones." },
+	{ key: "autoExpandUnread", title: "Auto-open groups with unread mail", description: "Groups that contain unread emails start expanded; read groups stay collapsed." },
 	{ key: "senderAvatars", title: "Sender avatars", description: "Show a coloured circle with the sender's initials." },
 	{ key: "attachmentBadge", title: "Attachment badge", description: "Show a paperclip badge on emails that include files." },
 	{ key: "showPreview", title: "Message preview", description: "Show a grey preview line under the subject." },
