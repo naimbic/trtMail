@@ -4,6 +4,7 @@ import { getAttachmentForUser } from "@/lib/email/attachments";
 import type { AttachmentRouteParams } from "./types";
 import {
 	getAttachmentContentDisposition,
+	getAttachmentContentSecurityPolicy,
 	isPreviewableAttachmentType,
 } from "./utils";
 
@@ -27,13 +28,10 @@ export async function GET(request: Request, { params }: AttachmentRouteParams) {
 	const headers = new Headers();
 	object.writeHttpMetadata(headers);
 	headers.set("Content-Type", attachment.contentType);
-	headers.set("Content-Length", String(attachment.size));
+	headers.set("Content-Length", String(object.size ?? attachment.size));
 	headers.set("Content-Disposition", getAttachmentContentDisposition(attachment.filename, inline));
 	headers.set("X-Content-Type-Options", "nosniff");
-	headers.set(
-		"Content-Security-Policy",
-		"default-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'unsafe-inline'; sandbox",
-	);
+	headers.set("Content-Security-Policy", getAttachmentContentSecurityPolicy(attachment.contentType));
 	headers.set("Cache-Control", "private, max-age=3600");
 
 	return new Response(object.body, { headers });
