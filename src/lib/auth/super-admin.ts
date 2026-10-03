@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { verifyPassword } from "./password";
 import type { users } from "@/db/schema";
 
@@ -5,7 +6,10 @@ import type { users } from "@/db/schema";
  * Env-only super-admin. Never stored in the DB, never listed, never editable.
  * Configured via process.env:
  *   SUPER_ADMIN_EMAIL          — login email
- *   SUPER_ADMIN_PASSWORD_HASH  — bcrypt hash of the password (also used as the token-signing key)
+ *   SUPER_ADMIN_PASSWORD_HASH  — bcrypt hash of the password (also used as the token-signing key).
+ *                                Coolify/Docker expand "$" in values: write each "$" as "$$" or use
+ *                                SUPER_ADMIN_PASSWORD instead.
+ *   SUPER_ADMIN_PASSWORD       — alternative: the password itself (no hash needed; used when no hash is set)
  *   SUPER_ADMIN_TOTP_SECRET    — optional base32 TOTP secret to also 2FA the super-admin
  *
  * Because the `sessions` table has a FK to `users`, the super-admin session is NOT a DB row.
@@ -21,14 +25,32 @@ type SuperAdminUser = typeof users.$inferSelect;
 function cfg() {
 	return {
 		email: process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase() ?? "",
-		passwordHash: process.env.SUPER_ADMIN_PASSWORD_HASH ?? "",
+		passwordHash: process.env.SUPER_ADMIN_PASSWORD_HASH?.trim() ?? "",
+		plainPassword: process.env.SUPER_ADMIN_PASSWORD ?? "",
 		totpSecret: process.env.SUPER_ADMIN_TOTP_SECRET?.trim() ?? "",
 	};
 }
 
+const BCRYPT_PATTERN = /^\$2[abxy]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
 export function isSuperAdminConfigured(): boolean {
-	const { email, passwordHash } = cfg();
-	return Boolean(email && passwordHash);
+	const { email, passwordHash, plainPassword } = cfg();
+	return Boolean(email && (passwordHash || plainPassword));
+}
+
+/** Key that signs super-admin tokens: stable across restarts for the same credentials. */
+function signingKey(): string {
+	const { passwordHash, plainPassword } = cfg();
+	return passwordHash || createHash("sha256").update(`sa-plain:${plainPassword}`).digest("hex");
+}
+
+let warnedBadHash = false;
+function warnIfHashLooksBroken(hash: string) {
+	if (!hash || warnedBadHash || BCRYPT_PATTERN.test(hash)) return;
+	warnedBadHash = true;
+	console.warn(
+		"SUPER_ADMIN_PASSWORD_HASH is not a valid bcrypt hash. If it was set in Coolify, each \"$\" must be written as \"$$\" (or use SUPER_ADMIN_PASSWORD instead).",
+	);
 }
 
 export function superAdminHasTotp(): boolean {
@@ -42,11 +64,19 @@ export function isSuperAdminEmail(email: string): boolean {
 
 export function verifySuperAdminPassword(password: string): boolean {
 	if (!isSuperAdminConfigured()) return false;
-	try {
-		return verifyPassword(password, cfg().passwordHash);
-	} catch {
-		return false;
+	const { passwordHash, plainPassword } = cfg();
+	if (passwordHash) {
+		warnIfHashLooksBroken(passwordHash);
+		try {
+			if (verifyPassword(password, passwordHash)) return true;
+		} catch {
+			/* fall through to the plain password, if any */
+		}
 	}
+	if (!plainPassword) return false;
+	const a = createHash("sha256").update(password).digest();
+	const b = createHash("sha256").update(plainPassword).digest();
+	return timingSafeEqual(a, b);
 }
 
 export function superAdminUser(): SuperAdminUser {
@@ -87,7 +117,7 @@ async function hmacHex(key: string, data: string): Promise<string> {
 export async function createSuperAdminToken(): Promise<string> {
 	const exp = Date.now() + TTL_MS;
 	const payload = `${TOKEN_PREFIX}${exp}`;
-	const sig = await hmacHex(cfg().passwordHash, payload);
+	const sig = await hmacHex(signingKey(), payload);
 	return `${payload}.${sig}`;
 }
 
@@ -101,7 +131,7 @@ export async function resolveSuperAdminToken(token: string): Promise<SuperAdminU
 	if (parts.length !== 3) return null;
 	const exp = Number(parts[1]);
 	if (!Number.isFinite(exp) || exp < Date.now()) return null;
-	const expected = await hmacHex(cfg().passwordHash, `${TOKEN_PREFIX}${parts[1]}`);
+	const expected = await hmacHex(signingKey(), `${TOKEN_PREFIX}${parts[1]}`);
 	const provided = parts[2];
 	if (expected.length !== provided.length) return null;
 	let diff = 0;

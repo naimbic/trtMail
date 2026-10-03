@@ -39,10 +39,9 @@ export async function POST(request: Request) {
 	}
 
 	// Env-only super-admin — authenticated from env, never present in the DB.
-	if (isSuperAdminEmail(parsed.data.email)) {
-		if (!verifySuperAdminPassword(parsed.data.password)) {
-			return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-		}
+	// If the password does not match, fall through so a normal DB account with the
+	// same email (e.g. the first-start ADMIN_EMAIL admin) can still sign in.
+	if (isSuperAdminEmail(parsed.data.email) && verifySuperAdminPassword(parsed.data.password)) {
 		const saToken = await createSuperAdminToken();
 		await createAuditLog(env, {
 			actorUserId: null,
