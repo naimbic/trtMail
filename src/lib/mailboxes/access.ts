@@ -25,7 +25,7 @@ export async function getMailboxAccessLevel(
 	if (!mailbox || mailbox.disabled) return null;
 
 	const isOwner = mailbox.userId === user.id;
-	if (isOwner) return buildAccess(mailbox, "full_access", true);
+	if (isOwner || user.role === "super_admin") return buildAccess(mailbox, "full_access", true);
 	if (mailbox.type !== "shared" || !(await isTeamMailboxSharingEnabled(db))) return null;
 
 	const [delegatedAccess] = await db
@@ -39,6 +39,8 @@ export async function getMailboxAccessLevel(
 }
 
 export async function listAccessibleMailboxes(db: AppDatabase, user: Pick<SessionUser, "id" | "email" | "role">) {
+	// The super-admin sees and manages every mailbox in the installation.
+	const everything = user.role === "super_admin";
 	const ownedRows = await db
 		.select({
 			id: mailboxes.id,
@@ -59,7 +61,7 @@ export async function listAccessibleMailboxes(db: AppDatabase, user: Pick<Sessio
 		})
 		.from(mailboxes)
 		.innerJoin(domains, eq(mailboxes.domainId, domains.id))
-		.where(and(eq(mailboxes.userId, user.id), eq(mailboxes.disabled, false)));
+		.where(everything ? eq(mailboxes.disabled, false) : and(eq(mailboxes.userId, user.id), eq(mailboxes.disabled, false)));
 	const owned = ownedRows
 		.map((row) => {
 			const { avatarKey, ...mailbox } = row;
@@ -71,7 +73,7 @@ export async function listAccessibleMailboxes(db: AppDatabase, user: Pick<Sessio
 			};
 		});
 
-	if (!(await isTeamMailboxSharingEnabled(db))) return owned;
+	if (everything || !(await isTeamMailboxSharingEnabled(db))) return owned;
 	const sharedRows = await db
 		.select({
 			id: mailboxes.id,

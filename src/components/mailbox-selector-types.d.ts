@@ -4,7 +4,7 @@ export type MailboxSelectorUser = {
 	id: string;
 	email: string;
 	name: string;
-	role: "admin" | "user";
+	role: "super_admin" | "admin" | "manager" | "user";
 	hasAvatar: boolean;
 };
 

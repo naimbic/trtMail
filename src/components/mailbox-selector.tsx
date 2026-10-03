@@ -276,7 +276,7 @@ export function MailboxSelector() {
 					)}
 
 					<div className="mt-2 overflow-hidden rounded-[22px] bg-white">
-						{user?.role === "admin" && (
+						{(user?.role === "admin" || user?.role === "super_admin") && (
 							<Link
 								href="/admin"
 								onClick={() => setOpen(false)}

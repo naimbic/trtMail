@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 	const env = getEnv();
 	const user = await getCurrentUser(env, request);
 	if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	if (user.id === SUPER_ADMIN_ID) {
+	if (user.id === SUPER_ADMIN_ID || user.role === "super_admin") {
 		return NextResponse.json({ error: "The super-admin uses SUPER_ADMIN_TOTP_SECRET in env." }, { status: 400 });
 	}
 	const secret = generateSecret();

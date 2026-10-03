@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: AccountRouteParams) {
 	if (access.error) return access.error;
 	const { id } = await params;
 	const account = await selectAccountById(getDb(access.env), id);
-	if (!account || (account.id !== access.user!.id && account.createdByUserId !== access.user!.id)) {
+	if (!account || (account.id !== access.user!.id && account.createdByUserId !== access.user!.id && access.user!.role !== "super_admin")) {
 		return NextResponse.json({ error: "Account not found" }, { status: 404 });
 	}
 	return NextResponse.json({
@@ -39,7 +39,7 @@ export async function PATCH(request: Request, { params }: AccountRouteParams) {
 	const { id } = await params;
 	const db = getDb(access.env);
 	const account = await selectAccountById(db, id);
-	if (!account || (account.id !== access.user!.id && account.createdByUserId !== access.user!.id)) {
+	if (!account || (account.id !== access.user!.id && account.createdByUserId !== access.user!.id && access.user!.role !== "super_admin")) {
 		return NextResponse.json({ error: "Account not found" }, { status: 404 });
 	}
 	if (account.role === "super_admin") {

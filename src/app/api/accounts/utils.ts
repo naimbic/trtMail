@@ -74,7 +74,7 @@ export async function requireTeamAdmin(request: Request) {
 	try {
 		const user = await requireUser(env, request);
 		assertCan(user, "manageUsers");
-		if (!(await getLicenseEntitlements(env)).canManageAccounts) {
+		if (user.role !== "super_admin" && !(await getLicenseEntitlements(env)).canManageAccounts) {
 			return {
 				env,
 				user,

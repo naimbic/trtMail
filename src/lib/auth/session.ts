@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import { newId } from "@/lib/ids";
 import { getDb } from "@/db";
 import { sessions, users } from "@/db/schema";
@@ -41,7 +41,19 @@ export async function getUserFromSession(
 ): Promise<typeof users.$inferSelect | null> {
 	if (!token) return null;
 	// Env-only super-admin: resolved from a signed token, never touches the DB.
-	if (isSuperAdminToken(token)) return resolveSuperAdminToken(token);
+	if (isSuperAdminToken(token)) {
+		const superAdmin = await resolveSuperAdminToken(token);
+		if (!superAdmin) return null;
+		// The super-admin has no database row, so act as the primary administrator for ownership
+		// (domains, mailboxes, contacts, folders…) while keeping the super_admin role.
+		const [primary] = await getDb(env)
+			.select({ id: users.id, canManageMailboxes: users.canManageMailboxes })
+			.from(users)
+			.where(eq(users.role, "admin"))
+			.orderBy(asc(users.createdAt))
+			.limit(1);
+		return primary ? { ...superAdmin, id: primary.id, canManageMailboxes: true } : superAdmin;
+	}
 	const db = getDb(env);
 	const tokenHash = await hashSessionToken(token);
 	const [session] = await db

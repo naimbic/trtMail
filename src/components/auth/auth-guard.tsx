@@ -40,7 +40,7 @@ export function AuthGuard({ children, mode = "protected", requireMailbox, requir
 					return;
 				}
 
-				if (requireMailbox && data.hasMailboxes === false && data.user?.role === "admin" && data.isSetup === false && pathname !== "/setup") {
+				if (requireMailbox && data.hasMailboxes === false && (data.user?.role === "admin" || data.user?.role === "super_admin") && data.isSetup === false && pathname !== "/setup") {
 					router.replace("/setup");
 					return;
 				}

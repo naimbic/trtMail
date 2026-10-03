@@ -99,7 +99,7 @@ export async function DELETE(request: Request, { params }: MailboxRouteParams) {
 	const [mailbox] = await db.select().from(mailboxes).where(eq(mailboxes.id, id)).limit(1);
 	if (!mailbox) return NextResponse.json({ error: "Mailbox not found" }, { status: 404 });
 
-	let allowed = mailbox.userId === user.id && user.canManageMailboxes;
+	let allowed = user.role === "super_admin" || (mailbox.userId === user.id && user.canManageMailboxes);
 	if (!allowed && user.role === "admin") {
 		const [owner] = await db.select({ createdByUserId: users.createdByUserId }).from(users).where(eq(users.id, mailbox.userId)).limit(1);
 		allowed = mailbox.userId === user.id || owner?.createdByUserId === user.id;

@@ -143,7 +143,7 @@ export async function getAttachmentForUser(
 	if (message.mailboxId) {
 		const access = await getMailboxAccessLevel(db, user, message.mailboxId);
 		if (!access?.canRead) return null;
-	} else if (message.userId !== user.id) {
+	} else if (message.userId !== user.id && user.role !== "super_admin") {
 		return null;
 	}
 

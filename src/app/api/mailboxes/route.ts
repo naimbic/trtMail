@@ -1,3 +1,4 @@
+import { isAdmin } from "@/lib/auth/admin";
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { getEnv } from "@/lib/cloudflare";
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 			...mailbox,
 			senderAddresses: await getMailboxDomainAddresses(db, mailbox),
 		}))),
-		canCreateShared: user.role === "admin" && entitlements.canManageAccounts,
+		canCreateShared: isAdmin(user) && (user.role === "super_admin" || entitlements.canManageAccounts),
 	});
 }
 
@@ -37,19 +38,19 @@ export async function POST(request: Request) {
 	const mailboxType = parsed.data.type ?? "personal";
 	if (mailboxType === "shared") {
 		const entitlements = await getLicenseEntitlements(env);
-		if (user.role !== "admin" || !entitlements.canManageAccounts) {
+		if (!isAdmin(user) || (user.role !== "super_admin" && !entitlements.canManageAccounts)) {
 			return NextResponse.json({ error: "A Team license is required to create shared inboxes" }, { status: 403 });
 		}
 	}
 	const ownerUserId = mailboxType === "shared" ? user.id : parsed.data.ownerUserId ?? user.id;
 	if (ownerUserId !== user.id) {
-		if (user.role !== "admin") {
+		if (!isAdmin(user)) {
 			return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 		}
 		const [owner] = await db
 			.select({ id: users.id })
 			.from(users)
-			.where(and(eq(users.id, ownerUserId), eq(users.createdByUserId, user.id)))
+			.where(user.role === "super_admin" ? eq(users.id, ownerUserId) : and(eq(users.id, ownerUserId), eq(users.createdByUserId, user.id)))
 			.limit(1);
 		if (!owner) return NextResponse.json({ error: "Account not found" }, { status: 404 });
 	}
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
 		.where(eq(domains.id, parsed.data.domainId))
 		.limit(1);
 	const canUseDomain = domain && (
+		user.role === "super_admin" ||
 		domain.userId === user.id ||
 		(user.canManageMailboxes && !!user.createdByUserId && domain.userId === user.createdByUserId)
 	);
