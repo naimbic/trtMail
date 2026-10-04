@@ -242,20 +242,20 @@ function MessageListRow({
 						</span>
 					)}
 				</Link>
-				<div className="pointer-events-none absolute right-3 top-2 z-10 flex items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+				<div className="pointer-events-none absolute right-2 top-1 z-10 flex items-center gap-px rounded-full border border-neutral-200 bg-white px-0.5 opacity-0 shadow-sm [&_button]:h-6 [&_button]:w-6 [&_button]:min-w-0 [&_button]:p-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
 					<Tooltip label={pinned ? "Unpin" : "Pin"}>
 						<Button type="button" variant="ghost" size="sm" aria-label={pinned ? "Unpin" : "Pin"} onClick={() => void toggleMessagePin(message.id).then((r) => setPinned(r.pinned))}>
-							<Pin className={`h-4 w-4 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
+							<Pin className={`h-3.5 w-3.5 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
 						</Button>
 					</Tooltip>
 					<Tooltip label={starred ? "Unstar" : "Star"}>
 						<Button type="button" variant="ghost" size="sm" aria-label={starred ? "Unstar" : "Star"} onClick={() => void toggleMessageStar(message.id).then((r) => setStarred(r.starred))}>
-							<Star className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
+							<Star className={`h-3.5 w-3.5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
 						</Button>
 					</Tooltip>
 					<Tooltip label="Delete">
 						<Button type="button" variant="ghost" size="sm" aria-label="Delete" onClick={() => void onMessageAction(message.id, "trash").then(() => emitUndo("Message moved to Trash", () => moveMessagesToInbox([message.id])))}>
-							<Trash2 className="h-4 w-4" />
+							<Trash2 className="h-3.5 w-3.5" />
 						</Button>
 					</Tooltip>
 				</div>

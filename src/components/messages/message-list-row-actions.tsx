@@ -70,43 +70,43 @@ export function MessageListRowActions({ message, onAction, group }: MessageListR
 
 	return (
 		<>
-			<div className="pointer-events-none absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-full border border-neutral-200 bg-white px-1 opacity-0 shadow-sm transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+			<div className="pointer-events-none absolute right-2 top-1 z-10 flex items-center gap-px rounded-full border border-neutral-200 bg-white px-0.5 opacity-0 shadow-sm [&_button]:h-6 [&_button]:w-6 [&_button]:min-w-0 [&_button]:p-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
 				<Tooltip label={message.replied ? "Replied — reply again" : "Reply"}>
 					<Button type="button" variant="ghost" size="sm" disabled={replying} onClick={() => void handleReply()} aria-label="Reply">
-						<Reply className={`h-4 w-4 ${message.replied ? "text-blue-600" : ""}`} />
+						<Reply className={`h-3.5 w-3.5 ${message.replied ? "text-blue-600" : ""}`} />
 					</Button>
 				</Tooltip>
 				{replyAllCc && (
 					<Tooltip label="Reply all">
 						<Button type="button" variant="ghost" size="sm" disabled={replying} onClick={() => void handleReply(replyAllCc)} aria-label="Reply all">
-							<ReplyAll className={`h-4 w-4 ${message.replied ? "text-blue-600" : ""}`} />
+							<ReplyAll className={`h-3.5 w-3.5 ${message.replied ? "text-blue-600" : ""}`} />
 						</Button>
 					</Tooltip>
 				)}
-				<span className="mx-0.5 h-5 w-px bg-neutral-200" />
+				<span className="mx-0.5 h-4 w-px bg-neutral-200" />
 				<Tooltip label={pinned ? "Unpin" : "Pin"}>
 					<Button type="button" variant="ghost" size="sm" onClick={() => void toggleMessagePin(message.id).then((r) => setPinned(r.pinned))} aria-label={pinned ? "Unpin" : "Pin"}>
-						<Pin className={`h-4 w-4 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
+						<Pin className={`h-3.5 w-3.5 ${pinned ? "fill-blue-500 text-blue-500" : ""}`} />
 					</Button>
 				</Tooltip>
 				<Tooltip label={starred ? "Unstar" : "Star"}>
 					<Button type="button" variant="ghost" size="sm" onClick={() => void toggleMessageStar(message.id).then((r) => setStarred(r.starred))} aria-label={starred ? "Unstar" : "Star"}>
-						<Star className={`h-4 w-4 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
+						<Star className={`h-3.5 w-3.5 ${starred ? "fill-amber-400 text-amber-400" : ""}`} />
 					</Button>
 				</Tooltip>
 				<Tooltip label="Archive">
 					<Button type="button" variant="ghost" size="sm" onClick={() => void onAction("archive")} aria-label="Archive">
-						<Archive className="h-4 w-4" />
+						<Archive className="h-3.5 w-3.5" />
 					</Button>
 				</Tooltip>
 				<Tooltip label="Trash">
 					<Button type="button" variant="ghost" size="sm" onClick={() => void onAction("trash")} aria-label="Trash">
-						<Trash2 className="h-4 w-4" />
+						<Trash2 className="h-3.5 w-3.5" />
 					</Button>
 				</Tooltip>
 				<Tooltip label={readAction === "read" ? "Mark as read" : "Mark as unread"}>
 					<Button type="button" variant="ghost" size="sm" onClick={() => void onAction(readAction)} aria-label={readAction === "read" ? "Mark as read" : "Mark as unread"}>
-						{readAction === "read" ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+						{readAction === "read" ? <MailOpen className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
 					</Button>
 				</Tooltip>
 				<Tooltip label={snoozed ? "Unsnooze" : "Snooze"}>
@@ -117,20 +117,20 @@ export function MessageListRowActions({ message, onAction, group }: MessageListR
 						}
 						setSnoozeOpen(true);
 					}} aria-label={snoozed ? "Unsnooze" : "Snooze"}>
-						<Clock className={`h-4 w-4 ${snoozeColor}`} />
+						<Clock className={`h-3.5 w-3.5 ${snoozeColor}`} />
 					</Button>
 				</Tooltip>
 				{group && group.count > 1 && (
 					<>
-						<span className="mx-0.5 h-5 w-px bg-neutral-200" />
+						<span className="mx-0.5 h-4 w-px bg-neutral-200" />
 						<Tooltip label={`Mark all ${group.count} from this sender as read`}>
 							<Button type="button" variant="ghost" size="sm" onClick={() => group.onAction("read")} aria-label={`Mark all ${group.count} as read`}>
-								<MailCheck className="h-4 w-4 text-blue-600" />
+								<MailCheck className="h-3.5 w-3.5 text-blue-600" />
 							</Button>
 						</Tooltip>
 						<Tooltip label={`Archive all ${group.count} from this sender`}>
 							<Button type="button" variant="ghost" size="sm" onClick={() => group.onAction("archive")} aria-label={`Archive all ${group.count}`}>
-								<Archive className="h-4 w-4 text-blue-600" />
+								<Archive className="h-3.5 w-3.5 text-blue-600" />
 							</Button>
 						</Tooltip>
 					</>
