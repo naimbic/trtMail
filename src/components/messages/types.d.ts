@@ -46,6 +46,7 @@ export type RowMessageAction = "archive" | "trash" | "read" | "unread";
 export type MessageListRowActionsProps = {
 	message: Message;
 	onAction: (action: RowMessageAction) => Promise<void>;
+	group?: MessageGroupInfo;
 };
 
 export type MessageFolderPageProps = {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { Archive, ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, MailOpen, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -112,24 +112,6 @@ function GroupToggle({ group }: { group: MessageGroupInfo }) {
 			{group.expanded ? "Hide" : `+${more} earlier`}
 			<ChevronDown className={`h-3.5 w-3.5 transition-transform ${group.expanded ? "rotate-180" : ""}`} />
 		</button>
-	);
-}
-
-function GroupActions({ group }: { group: MessageGroupInfo }) {
-	const run = (action: "read" | "archive") => (event: MouseEvent<HTMLButtonElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
-		group.onAction(action);
-	};
-	return (
-		<span className="ml-auto hidden shrink-0 items-center gap-1 group-hover:flex">
-			<button type="button" onClick={run("read")} title={`Mark all ${group.count} as read`} className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-neutral-600 hover:border-blue-300 hover:text-blue-700">
-				<MailOpen className="h-3 w-3" /> Read all
-			</button>
-			<button type="button" onClick={run("archive")} title={`Archive all ${group.count}`} className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-neutral-600 hover:border-blue-300 hover:text-blue-700">
-				<Archive className="h-3 w-3" /> Archive all
-			</button>
-		</span>
 	);
 }
 
@@ -324,7 +306,6 @@ function MessageListRow({
 					)}
 					{prefs.attachmentBadge && (rowMessage.hasAttachments || group?.hasAttachments) && <AttachmentBadge />}
 					{group && group.count > 1 && <GroupToggle group={group} />}
-					{group && group.count > 1 && <GroupActions group={group} />}
 				</span>
 				{/* Line 2 — subject */}
 				<span className={`mt-0.5 block truncate text-sm ${unread ? "font-semibold text-neutral-900" : "text-neutral-700"}`}>
@@ -381,6 +362,7 @@ function MessageListRow({
 			{(config.folder === "inbox" || config.folder === "snoozed") && message.direction === "inbound" && (
 				<MessageListRowActions
 					message={rowMessage}
+					group={group}
 					onAction={async (action) => {
 						const previousRead = read;
 						const unreadDelta = action === "read" ? -1 : action === "unread" ? 1 : 0;

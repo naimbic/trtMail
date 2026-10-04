@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Clock, Mail, MailOpen, Pin, Reply, ReplyAll, Star, Trash2 } from "lucide-react";
+import { Archive, Clock, Mail, MailCheck, MailOpen, Pin, Reply, ReplyAll, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { buildReplyAllCc, createReplyDraft } from "@/components/message-actions/
 import type { MessageListRowActionsProps } from "./types";
 import { getSnoozePresets, isMessageSnoozed, snoozeMessage, toggleMessagePin, toggleMessageStar, unsnoozeMessage } from "./message-list-row-actions-utils";
 
-export function MessageListRowActions({ message, onAction }: MessageListRowActionsProps) {
+export function MessageListRowActions({ message, onAction, group }: MessageListRowActionsProps) {
 	const { openDraftComposer } = useCompose();
 	const [snoozeOpen, setSnoozeOpen] = useState(false);
 	const [snoozedUntil, setSnoozedUntil] = useState(() => getSnoozePresets()[0].value);
@@ -120,6 +120,21 @@ export function MessageListRowActions({ message, onAction }: MessageListRowActio
 						<Clock className={`h-4 w-4 ${snoozeColor}`} />
 					</Button>
 				</Tooltip>
+				{group && group.count > 1 && (
+					<>
+						<span className="mx-0.5 h-5 w-px bg-neutral-200" />
+						<Tooltip label={`Mark all ${group.count} from this sender as read`}>
+							<Button type="button" variant="ghost" size="sm" onClick={() => group.onAction("read")} aria-label={`Mark all ${group.count} as read`}>
+								<MailCheck className="h-4 w-4 text-blue-600" />
+							</Button>
+						</Tooltip>
+						<Tooltip label={`Archive all ${group.count} from this sender`}>
+							<Button type="button" variant="ghost" size="sm" onClick={() => group.onAction("archive")} aria-label={`Archive all ${group.count}`}>
+								<Archive className="h-4 w-4 text-blue-600" />
+							</Button>
+						</Tooltip>
+					</>
+				)}
 			</div>
 
 			<Dialog open={snoozeOpen} onOpenChange={setSnoozeOpen}>
