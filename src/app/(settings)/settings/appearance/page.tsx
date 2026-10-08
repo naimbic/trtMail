@@ -1,3 +1,4 @@
+import { InstallAppCard } from "@/components/settings/install-app-card";
 import { AppearanceSettingsForm } from "@/components/settings/appearance-settings-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -18,6 +19,16 @@ export default function SettingsAppearancePage() {
 				</CardHeader>
 				<CardContent className="pb-6">
 					<AppearanceSettingsForm />
+				</CardContent>
+			</Card>
+
+			<Card className="rounded-3xl border-0 bg-white px-6">
+				<CardHeader>
+					<CardTitle>App</CardTitle>
+					<CardDescription>Add trtMail to your desktop or phone.</CardDescription>
+				</CardHeader>
+				<CardContent className="pb-6">
+					<InstallAppCard />
 				</CardContent>
 			</Card>
 		</div>

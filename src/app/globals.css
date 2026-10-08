@@ -182,3 +182,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 .mail-sidebar-version span { font-weight:500; color:#aab4c4; }
 .mail-sidebar-version:hover, .mail-sidebar-version:hover span { color:#2468dc; }
 .mail-sidebar nav[data-collapsed="true"] .mail-sidebar-version { font-size:9px; letter-spacing:0; }
+
+.mail-install-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin-top:12px; padding:8px 10px; border:1px dashed #b9cdf5; border-radius:10px; background:#f3f7ff; color:#2358c4; font-size:12px; font-weight:600; transition:background .15s,border-color .15s; }
+.mail-install-btn:hover { background:#e6efff; border-color:#7fa6ee; }
+.mail-install-btn + .mail-sidebar-version { margin-top:10px; }
