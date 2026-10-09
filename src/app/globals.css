@@ -132,11 +132,10 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 .mail-auth-rule { display:block; height:3px; width:36px; background:#4a8bff; margin-bottom:22px; }
 .mail-auth-note p:first-of-type { color:#eef4ff; }
 @media(max-width:767px) {
- .mail-topbar { height:66px; padding:12px; gap:8px; }
+ .mail-topbar { height:58px; padding:8px 10px; gap:8px; }
  .mail-topbar > a { display:none; }
- .mail-sidebar { padding-left:8px; padding-right:8px; }
- .mail-sidebar .mail-nav-item { padding-left:0; }
- .mail-content { padding-left:12px; padding-right:12px; }
+ .mail-sidebar { padding-left:12px; padding-right:12px; background:#fff; }
+ .mail-content { padding-left:0; padding-right:0; }
  .mail-auth-card { min-height:0; border-radius:18px; }
  .mail-auth-note { display:none; }
  .mail-auth-story { padding:28px; }

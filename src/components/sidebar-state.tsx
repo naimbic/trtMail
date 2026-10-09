@@ -3,21 +3,21 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { SidebarProviderProps, SidebarState } from "./sidebar-state-types";
 
-const SidebarContext = createContext<SidebarState>({ minimal: false, toggle: () => undefined });
+const SidebarContext = createContext<SidebarState>({ minimal: false, toggle: () => undefined, mobileOpen: false, setMobileOpen: () => undefined });
 
 export function SidebarProvider({ children, expandedWidth = 260 }: SidebarProviderProps) {
 	const [minimal, setMinimal] = useState(false);
 	const [storageKey, setStorageKey] = useState<string | null>(null);
+	const [mobileOpen, setMobileOpen] = useState(false);
 
 	useEffect(() => {
-		if (window.innerWidth < 768) setMinimal(true);
 		void fetch("/api/auth/me", { cache: "no-store" })
 			.then((response) => response.json() as Promise<{ user?: { id?: string } }>)
 			.then((data) => {
 				if (!data.user?.id) return;
 				const key = `mailflare-sidebar-minimal:${data.user.id}`;
 				setStorageKey(key);
-				setMinimal(window.innerWidth < 768 || localStorage.getItem(key) === "true");
+				setMinimal(window.innerWidth >= 768 && localStorage.getItem(key) === "true");
 			});
 	}, []);
 
@@ -30,7 +30,7 @@ export function SidebarProvider({ children, expandedWidth = 260 }: SidebarProvid
 	}
 
 	return (
-		<SidebarContext.Provider value={{ minimal, toggle }}>
+		<SidebarContext.Provider value={{ minimal, toggle, mobileOpen, setMobileOpen }}>
 			<div className="h-full" style={{ "--sidebar-width": `${minimal ? 72 : expandedWidth}px` } as React.CSSProperties}>
 				{children}
 			</div>

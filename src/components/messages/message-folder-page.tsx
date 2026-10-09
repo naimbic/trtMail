@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Layers, ListFilter, Inbox, Paperclip, Pin, Reply, Star, Trash2 } from "lucide-react";
 import { getEmailAddress } from "@/lib/email/address";
 import { Button } from "@/components/ui/button";
 import { authFetch } from "@/lib/auth/client";
@@ -60,7 +60,7 @@ const avatarColors = [
 	"bg-orange-100 text-orange-700",
 ];
 
-function SenderAvatar({ name, seed }: { name: string; seed: string }) {
+function SenderAvatar({ name, seed, selected = false, onToggle }: { name: string; seed: string; selected?: boolean; onToggle?: () => void }) {
 	const letters = name
 		.replace(/[^\p{L}\p{N}\s]/gu, "")
 		.trim()
@@ -72,10 +72,22 @@ function SenderAvatar({ name, seed }: { name: string; seed: string }) {
 	for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
 	return (
 		<span
-			aria-hidden
-			className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${avatarColors[hash % avatarColors.length]}`}
+			role="checkbox"
+			aria-checked={selected}
+			aria-label={selected ? "Deselect" : "Select"}
+			onClick={(event) => {
+				// On phones the avatar doubles as the selection checkbox.
+				if (!onToggle || !window.matchMedia("(max-width: 767px)").matches) return;
+				event.preventDefault();
+				event.stopPropagation();
+				onToggle();
+			}}
+			className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors md:h-9 md:w-9 ${
+				selected ? "bg-blue-600 text-white max-md:ring-2 max-md:ring-blue-200" : avatarColors[hash % avatarColors.length]
+			}`}
 		>
-			{letters || "?"}
+			{selected ? <Check className="h-5 w-5 md:hidden" /> : null}
+			<span className={selected ? "max-md:hidden" : ""}>{letters || "?"}</span>
 		</span>
 	);
 }
@@ -263,7 +275,7 @@ function MessageListRow({
 		);
 	}
 
-	const className = `group relative flex w-full items-start gap-3 ${prefs.compactRows ? "min-h-[56px] py-1.5" : "min-h-[76px] py-3"} pr-5 text-left text-sm transition-colors ${nested ? "pl-6" : "pl-4"} ${getRowTone({
+	const className = `group relative flex w-full items-start gap-2.5 md:gap-3 ${prefs.compactRows ? "min-h-[56px] py-1.5" : "min-h-[76px] py-3"} pr-3 md:pr-5 text-left text-sm transition-colors ${nested ? "pl-3 md:pl-6" : "pl-3 md:pl-4"} ${getRowTone({
 		nested,
 		groupOpen: !!group?.expanded,
 		unread,
@@ -272,7 +284,7 @@ function MessageListRow({
 	})} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`;
 	const content = (
 		<>
-			<span className="mt-1 shrink-0">
+			<span className="mt-1 shrink-0 max-md:hidden">
 				{config.folder === "inbox" && message.direction === "inbound" ? (
 					<Tooltip label={starred ? "Starred" : "Not starred"}>
 						<Button
@@ -293,7 +305,7 @@ function MessageListRow({
 					<Icon className="h-4 w-4 text-neutral-300" />
 				)}
 			</span>
-			{!prefs.senderAvatars ? null : nested ? <span className="w-9 shrink-0" /> : <SenderAvatar name={party} seed={partyEmail || party} />}
+			{!prefs.senderAvatars ? null : nested ? <span className="w-10 shrink-0 md:w-9" /> : <SenderAvatar name={party} seed={partyEmail || party} selected={selected} onToggle={() => onSelectedChange(message.id, !selected, group?.messageIds)} />}
 			<span className="min-w-0 flex-1">
 				{/* Line 1 — sender, address, markers, group toggle */}
 				<span className="flex items-center gap-2">
@@ -314,12 +326,28 @@ function MessageListRow({
 				{/* Line 3 — preview */}
 				{prefs.showPreview && <span className="block truncate text-[13px] leading-5 text-neutral-500">{preview}</span>}
 			</span>
-			<span
-				className={`mt-0.5 shrink-0 text-xs tabular-nums group-hover:opacity-0 ${
-					unread ? "font-semibold text-blue-700" : "text-neutral-500"
-				}`}
-			>
-				{formatMessageListTimestamp(message.createdAt)}
+			<span className="flex shrink-0 flex-col items-end gap-1">
+				<span
+					className={`mt-0.5 text-[11px] tabular-nums md:text-xs md:group-hover:opacity-0 ${
+						unread ? "font-semibold text-blue-700" : "text-neutral-500"
+					}`}
+				>
+					{formatMessageListTimestamp(message.createdAt)}
+				</span>
+				{config.folder === "inbox" && message.direction === "inbound" && (
+					<button
+						type="button"
+						aria-label={starred ? "Starred" : "Not starred"}
+						onClick={(event) => {
+							event.preventDefault();
+							event.stopPropagation();
+							void toggleMessageStar(message.id).then((result) => setStarred(result.starred));
+						}}
+						className="-mr-1 flex h-8 w-8 items-center justify-center rounded-full md:hidden"
+					>
+						<Star className={`h-[18px] w-[18px] ${starred ? "fill-amber-400 text-amber-400" : "text-neutral-300"}`} />
+					</button>
+				)}
 			</span>
 		</>
 	);
@@ -353,7 +381,7 @@ function MessageListRow({
 			<Checkbox
 				checked={selected}
 				onChange={(event) => onSelectedChange(message.id, event.target.checked, group?.messageIds)}
-				className="h-4 w-4 rounded border-neutral-300"
+				className={`h-4 w-4 rounded border-neutral-300 ${prefs.senderAvatars ? "max-md:hidden" : ""}`}
 				aria-label={group ? "Select all emails from this sender" : "Select message"}
 			/>
 			<Link href={href} onClick={onMessageNavigate} className="contents">
@@ -568,7 +596,7 @@ export function MessageFolderPage({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className={`flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 ${compact ? "px-4" : "px-6"}`}>
+			<div className={`flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 ${compact ? "px-4" : "px-3 md:px-6"}`}>
 				<div className="flex items-center gap-3 w-full">
 					<Tooltip label="Select all visible messages">
 						<Checkbox
@@ -614,7 +642,7 @@ export function MessageFolderPage({
 				</div>
 				{(selectedIds.length === 0 || compact) && (
 					<div className="flex items-center gap-2 text-neutral-500">
-						<span className="text-xs text-neutral-500 whitespace-nowrap">
+						<span className="hidden text-xs text-neutral-500 whitespace-nowrap sm:inline">
 							{pageRange.start} - {pageRange.end} of {pageRange.total}
 						</span>
 						<Tooltip label="Previous page">

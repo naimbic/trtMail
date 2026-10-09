@@ -70,7 +70,7 @@ export function MessageListRowActions({ message, onAction, group }: MessageListR
 
 	return (
 		<>
-			<div className="pointer-events-none absolute right-2 top-1 z-10 flex items-center gap-px rounded-full border border-neutral-200 bg-white px-0.5 opacity-0 shadow-sm [&_button]:h-6 [&_button]:w-6 [&_button]:min-w-0 [&_button]:p-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+			<div className="pointer-events-none absolute right-2 top-1 z-10 flex items-center max-md:hidden gap-px rounded-full border border-neutral-200 bg-white px-0.5 opacity-0 shadow-sm [&_button]:h-6 [&_button]:w-6 [&_button]:min-w-0 [&_button]:p-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
 				<Tooltip label={message.replied ? "Replied — reply again" : "Reply"}>
 					<Button type="button" variant="ghost" size="sm" disabled={replying} onClick={() => void handleReply()} aria-label="Reply">
 						<Reply className={`h-3.5 w-3.5 ${message.replied ? "text-blue-600" : ""}`} />
