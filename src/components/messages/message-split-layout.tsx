@@ -20,7 +20,7 @@ export function MessageSplitLayout({
 	if (!selectedMessageId) return children;
 
 	return (
-		<div className="h-full min-h-0 overflow-hidden lg:grid lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+		<div className="h-full min-h-0 overflow-hidden max-lg:h-auto max-lg:overflow-visible lg:grid lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
 			<aside className="hidden min-h-0 overflow-hidden border-r border-neutral-200 bg-white lg:block">
 				<MessageFolderPage
 					config={config}
@@ -29,7 +29,7 @@ export function MessageSplitLayout({
 					selection={{ selectedMessages, setSelectedMessages }}
 				/>
 			</aside>
-			<section className="min-h-0 min-w-0 overflow-hidden bg-white">
+			<section className="min-h-0 min-w-0 overflow-hidden bg-white max-lg:overflow-visible">
 				{selectedMessages.length > 0 ? (
 					<BulkMessageSelectionPane
 						selectedMessages={selectedMessages}

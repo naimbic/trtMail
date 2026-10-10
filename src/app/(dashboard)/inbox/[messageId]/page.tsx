@@ -104,7 +104,7 @@ export default function MessageDetailPage() {
   );
 
   return (
-    <div className="h-full overflow-y-auto overscroll-contain scrollbar-gutter-stable">
+    <div className="h-full overflow-y-auto overscroll-contain scrollbar-gutter-stable max-lg:h-auto max-lg:overflow-visible">
       {message.direction === "inbound" && !message.read && (
         <MarkAsRead messageId={message.id} />
       )}
@@ -135,12 +135,12 @@ export default function MessageDetailPage() {
           starred={message.starred}
         />
       </div>
-      <article className="px-6 py-4">
-        <h1 className="text-2xl text-neutral-900 mb-4">
+      <article className="min-w-0 px-4 py-4 md:px-6">
+        <h1 className="mb-4 break-words text-xl text-neutral-900 md:text-2xl">
           {message.subject ?? "(no subject)"}
         </h1>
 
-        <div className="mb-6 flex items-start justify-between border-b border-neutral-100 pb-5">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b border-neutral-100 pb-5 [&_*]:break-words">
           <div>
             <p className="text-sm text-neutral-900">
               <b>
@@ -176,7 +176,7 @@ export default function MessageDetailPage() {
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}
           </p>
         </div>
-        <div className="mail-body max-w-2xl text-[15px] leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6">
+        <div className="mail-body min-w-0 max-w-2xl overflow-x-auto break-words text-[15px] [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_iframe]:max-w-full [&_video]:max-w-full leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6">
           {htmlBody ? (
             <div dangerouslySetInnerHTML={{ __html: htmlBody }} />
           ) : (

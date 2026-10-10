@@ -69,7 +69,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <MailboxSelector />
         </header>
-        <main className="mail-content min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white scrollbar-gutter-stable md:rounded-tl-3xl">
+        <main className="mail-content min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white max-md:overflow-x-hidden scrollbar-gutter-stable md:rounded-tl-3xl">
           {children}
         </main>
       </div>
