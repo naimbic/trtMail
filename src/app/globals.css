@@ -134,7 +134,6 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 @media(max-width:767px) {
  .mail-topbar { height:58px; padding:8px 10px; gap:8px; }
  .mail-sidebar { padding-left:12px; padding-right:12px; background:#fff; }
- .mail-content { padding-left:0; padding-right:0; }
  .mail-auth-card { min-height:0; border-radius:18px; }
  .mail-auth-note { display:none; }
  .mail-auth-story { padding:28px; }
@@ -184,3 +183,9 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 .mail-install-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin-top:12px; padding:8px 10px; border:1px dashed #b9cdf5; border-radius:10px; background:#f3f7ff; color:#2358c4; font-size:12px; font-weight:600; transition:background .15s,border-color .15s; }
 .mail-install-btn:hover { background:#e6efff; border-color:#7fa6ee; }
 .mail-install-btn + .mail-sidebar-version { margin-top:10px; }
+
+/* Phones: data tables scroll sideways inside their card instead of being cut off. */
+@media(max-width:767px) {
+ .mail-content table { display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+ .mail-content table th, .mail-content table td { white-space:nowrap; }
+}

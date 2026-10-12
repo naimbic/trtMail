@@ -47,8 +47,8 @@ export function AppShell({ nav, header, headerClassName = "", mainClassName = ""
 				onClick={(event) => {
 					if ((event.target as HTMLElement).closest("a,button")) setMobileOpen(false);
 				}}
-				className={`mail-sidebar min-h-0 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-gutter-stable max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:w-[280px] max-md:max-w-[85vw] max-md:shadow-2xl max-md:transition-transform max-md:duration-200 ${
-					mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"
+				className={`mail-sidebar min-h-0 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-gutter-stable max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:w-[280px] max-md:max-w-[85vw] max-md:transition-transform max-md:duration-200 ${
+					mobileOpen ? "max-md:translate-x-0 max-md:shadow-2xl" : "max-md:-translate-x-full max-md:shadow-none"
 				}`}
 			>
 				{nav}
