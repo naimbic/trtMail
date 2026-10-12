@@ -73,7 +73,7 @@ export default function AccountDetailsPage() {
 							<Upload className="h-4 w-4" />
 							Change avatar
 						</span>
-						<Input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={(event) => void uploadAvatar(event.target.files?.[0])} />
+						<Input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => void uploadAvatar(event.target.files?.[0])} />
 					</Label>
 				</div>
 				<div className="space-y-2">

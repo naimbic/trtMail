@@ -113,7 +113,7 @@ export default function AccountMailboxesPage() {
             <p className="text-sm text-neutral-500">No mailboxes yet.</p>
           )}
         </div>
-        <form onSubmit={addMailbox} className="flex gap-2">
+        <form onSubmit={addMailbox} className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={localPart}
             onChange={(event) => setLocalPart(event.target.value)}
@@ -123,7 +123,7 @@ export default function AccountMailboxesPage() {
           <Select
             value={domainId}
             onChange={(event) => setDomainId(event.target.value)}
-            className="rounded-md border border-neutral-200 bg-white px-3 text-sm"
+            className="w-full rounded-md border border-neutral-200 bg-white px-3 text-sm sm:w-auto"
           >
             {domains.map((domain) => (
               <option key={domain.id} value={domain.id}>

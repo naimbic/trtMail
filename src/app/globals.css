@@ -187,5 +187,5 @@ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
 /* Phones: data tables scroll sideways inside their card instead of being cut off. */
 @media(max-width:767px) {
  .mail-content table { display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
- .mail-content table th, .mail-content table td { white-space:nowrap; }
 }
+@media(max-width:767px) { html, body { overflow-x:clip; } }
