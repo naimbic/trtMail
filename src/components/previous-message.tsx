@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { tidyPlainText } from "@/lib/email/tidy";
 import { linkify } from "@/lib/email/linkify";
 import type { PreviousMessageProps } from "./previous-message-types";
 
@@ -46,7 +47,7 @@ export function PreviousMessage({ message }: PreviousMessageProps) {
 					)}
 					{body && (
 						<pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-neutral-600">
-							{linkify(body)}
+							{linkify(tidyPlainText(body))}
 						</pre>
 					)}
 					{message.quotedContent.map((nested, index) => (

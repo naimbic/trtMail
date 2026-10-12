@@ -27,6 +27,7 @@ import {
 import { extractCloudAttachments } from "./cloud-attachment-utils";
 import { sanitizeEmailHtml } from "./email-html-sanitizer";
 import { linkify } from "./linkify";
+import { tidyPlainText } from "@/lib/email/tidy";
 
 export default function MessageDetailPage() {
   const params = useParams<{ messageId: string }>();
@@ -183,12 +184,12 @@ export default function MessageDetailPage() {
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}
           </p>
         </div>
-        <div className="mail-body min-w-0 max-w-2xl overflow-x-auto break-words text-[15px] [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_iframe]:max-w-full [&_video]:max-w-full leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6">
+        <div className="mail-body min-w-0 max-w-2xl overflow-x-auto break-words text-[15px] leading-[1.55] [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_iframe]:max-w-full [&_video]:max-w-full leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-2 [&_p:empty]:hidden [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6">
           {htmlBody ? (
             <div dangerouslySetInnerHTML={{ __html: htmlBody }} />
           ) : (
-            <pre className="whitespace-pre-wrap break-words font-sans text-[15px] leading-relaxed">
-              {linkify(cloudAttachmentResult.content)}
+            <pre className="whitespace-pre-wrap break-words font-sans text-[15px] leading-normal">
+              {linkify(tidyPlainText(cloudAttachmentResult.content))}
             </pre>
           )}
           {bodyDisplay.quotedContent.length > 0 && (
