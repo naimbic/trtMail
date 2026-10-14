@@ -12,7 +12,7 @@ export type TrtSignatureFields = {
 export const DEFAULT_TRT_SIGNATURE: TrtSignatureFields = {
 	name: "Laila Sqalli",
 	title: "Directrice Marketing",
-	role: "Account Manager (GCS - MENA)",
+	role: "Account Manager (MENA - Southern Europe - APAC)",
 	company: "trtDigital Maroc",
 	website: "www.trtdigital.ma",
 	phones: ["+212660602820", "+212684496060"],
@@ -26,7 +26,7 @@ function esc(value: string): string {
 
 /**
  * Table-based, inline-styled HTML so it renders in Gmail/Outlook/Apple Mail.
- * The logo is a hosted GIF (email clients cannot run Lottie); it plays once and ends on the full logo.
+ * The logo is a hosted GIF (email clients cannot run Lottie); it shows the full logo, fades out and draws back in on a loop.
  * No nested <div> is used, because the composer strips signature blocks up to the first </div>.
  */
 export function buildTrtSignatureHtml(origin: string, fields: TrtSignatureFields = DEFAULT_TRT_SIGNATURE): string {
@@ -50,7 +50,7 @@ export function buildTrtSignatureHtml(origin: string, fields: TrtSignatureFields
 		`<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;">` +
 		`<tr>` +
 		`<td valign="middle" style="padding:0 16px 0 0;border-right:2px solid #e5e7eb;">` +
-		`<a href="${esc(href(fields.website))}"><img src="${base}/signature/trtdigital-dot-logo.gif" width="110" alt="trtDigital.ma" style="display:block;border:0;width:110px;height:auto;"></a>` +
+		`<a href="${esc(href(fields.website))}"><img src="${base}/signature/trtdigital-logo-anim.gif" width="110" alt="trtDigital.ma" style="display:block;border:0;width:110px;height:auto;"></a>` +
 		`</td>` +
 		`<td valign="middle" style="padding:0 0 0 16px;font-size:13px;line-height:22px;color:#374151;">${rows}</td>` +
 		`</tr>` +
