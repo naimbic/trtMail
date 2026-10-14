@@ -13,6 +13,8 @@ export type DisplayPrefs = {
 	unreadAccent: boolean;
 	showSenderEmail: boolean;
 	compactRows: boolean;
+	/** Rows per page: sender groups when grouping is on, otherwise emails. */
+	pageSize: number;
 };
 
 export const DEFAULT_DISPLAY_PREFS: DisplayPrefs = {
@@ -24,7 +26,10 @@ export const DEFAULT_DISPLAY_PREFS: DisplayPrefs = {
 	unreadAccent: true,
 	showSenderEmail: true,
 	compactRows: false,
+	pageSize: 30,
 };
+
+export const PAGE_SIZE_OPTIONS = [15, 20, 30, 50, 100];
 
 const KEY = "trtmail:display-prefs";
 const EVENT = "trtmail:display-prefs-changed";

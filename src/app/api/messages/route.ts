@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, desc, and, like, or, count, isNull, inArray, lte, gt, gte, exists } from "drizzle-orm";
+import { eq, desc, and, like, or, count, isNull, inArray, lte, gt, gte, exists, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { getEnv } from "@/lib/cloudflare";
 import { getCurrentUser } from "@/lib/auth/cookies";
@@ -119,17 +119,56 @@ export async function GET(request: Request) {
 	}
 	const where = and(...conditions);
 
-	const [totalRow] = await db
-		.select({ total: count() })
-		.from(messages)
-		.where(where);
-	const rows = await db
-		.select()
-		.from(messages)
-		.where(where)
-		.orderBy(desc(messages.pinned), desc(messages.createdAt))
-		.limit(limit)
-		.offset(offset);
+	const groupBySender = url.searchParams.get("group") === "sender" && status !== "draft";
+	let total = 0;
+	let rows: Array<typeof messages.$inferSelect>;
+	if (groupBySender) {
+		// Pagination counts sender groups (not individual emails), so a page always holds `limit` rows.
+		const addressColumn = direction === "outbound" ? messages.toAddr : messages.fromAddr;
+		const senderKey = sql<string>`coalesce(nullif(lower(case when instr(${addressColumn}, '<') > 0 and instr(${addressColumn}, '>') > instr(${addressColumn}, '<') then substr(${addressColumn}, instr(${addressColumn}, '<') + 1, instr(${addressColumn}, '>') - instr(${addressColumn}, '<') - 1) else trim(${addressColumn}) end), ''), ${messages.id})`;
+		const [groupTotal] = await db
+			.select({ total: sql<number>`count(distinct ${senderKey})` })
+			.from(messages)
+			.where(where);
+		total = Number(groupTotal?.total ?? 0);
+		const groups = await db
+			.select({ key: senderKey })
+			.from(messages)
+			.where(where)
+			.groupBy(senderKey)
+			.orderBy(sql`max(${messages.pinned}) desc`, sql`max(${messages.createdAt}) desc`)
+			.limit(limit)
+			.offset(offset);
+		const keys = groups.map((group) => group.key);
+		const groupRows = keys.length
+			? await db
+					.select()
+					.from(messages)
+					.where(and(where, inArray(senderKey, keys)))
+					.orderBy(desc(messages.pinned), desc(messages.createdAt))
+					.limit(2000)
+			: [];
+		const order = new Map(keys.map((key, index) => [key, index]));
+		const keyOf = (message: typeof messages.$inferSelect) => {
+			const address = (direction === "outbound" ? message.toAddr : message.fromAddr) ?? "";
+			const match = address.match(/<([^>]*)>/);
+			return ((match ? match[1] : address).trim().toLowerCase()) || message.id;
+		};
+		rows = groupRows
+			.map((message, index) => ({ message, index, group: order.get(keyOf(message)) ?? Number.MAX_SAFE_INTEGER }))
+			.sort((a, b) => a.group - b.group || a.index - b.index)
+			.map((entry) => entry.message);
+	} else {
+		const [totalRow] = await db.select({ total: count() }).from(messages).where(where);
+		total = totalRow?.total ?? 0;
+		rows = await db
+			.select()
+			.from(messages)
+			.where(where)
+			.orderBy(desc(messages.pinned), desc(messages.createdAt))
+			.limit(limit)
+			.offset(offset);
+	}
 	const mailboxNameMap = new Map(
 		accessibleMailboxes.map((mailbox) => [
 			mailbox.id,
@@ -174,5 +213,5 @@ export async function GET(request: Request) {
 		};
 	});
 
-	return NextResponse.json({ messages: enrichedRows, total: totalRow?.total ?? 0, limit, offset });
+	return NextResponse.json({ messages: enrichedRows, total, limit, offset });
 }

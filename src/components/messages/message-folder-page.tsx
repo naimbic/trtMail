@@ -15,7 +15,7 @@ import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { usePageLoading } from "@/components/page-loading";
 import { useMessageCounts } from "@/hooks/use-message-counts";
 import { useMessages } from "@/hooks/use-messages";
-import { useDisplayPrefs } from "@/lib/display-prefs";
+import { PAGE_SIZE_OPTIONS, useDisplayPrefs } from "@/lib/display-prefs";
 import type { DisplayPrefs } from "@/lib/display-prefs";
 import type { BulkMessageAction } from "@/app/api/messages/bulk/types";
 import { setMessageDragData } from "@/lib/messages/drag-utils";
@@ -37,7 +37,6 @@ import {
 	runBulkMessageAction,
 } from "./utils";
 
-const pageSize = 20;
 
 function AttachmentBadge() {
 	return (
@@ -469,7 +468,8 @@ export function MessageFolderPage({
 	}
 	const { messages, isLoading, total, limit, updateMessages } = useMessages(config.folder, selectedMailbox?.id, {
 		query: effectiveQuery,
-		limit: pageSize,
+		limit: prefs.pageSize,
+		group: prefs.groupBySender && config.folder !== "drafts" ? "sender" : undefined,
 		offset,
 		read: unreadOnly ? "unread" : "all",
 	}, !mailboxesLoading, config.folderId);
@@ -489,7 +489,8 @@ export function MessageFolderPage({
 	const titleUnread = folderCount?.unread ?? 0;
 	const mailboxAddress = getMailboxAddress(selectedMailbox);
 	const currentAccountName = selectedMailbox?.displayName ?? selectedMailbox?.localPart;
-	const pageRange = getPageRange(offset, messages.length, total);
+	const rowsOnPage = canGroup ? senderGroups.length : messages.length;
+	const pageRange = getPageRange(offset, rowsOnPage, total);
 	const selectedMessages = selection?.selectedMessages ?? internalSelectedMessages;
 	const setSelectedMessages =
 		selection?.setSelectedMessages ?? setInternalSelectedMessages;
@@ -503,7 +504,7 @@ export function MessageFolderPage({
 	useEffect(() => {
 		setOffset(0);
 		setSelectedMessages([]);
-	}, [query, selectedMailbox?.id, config.folder, config.folderId, unreadOnly, attachmentsOnly, starredOnly]);
+	}, [query, selectedMailbox?.id, config.folder, config.folderId, unreadOnly, attachmentsOnly, starredOnly, prefs.pageSize, prefs.groupBySender]);
 
 	useEffect(() => {
 		setSelectedMessages([]);
@@ -642,6 +643,19 @@ export function MessageFolderPage({
 				</div>
 				{(selectedIds.length === 0 || compact) && (
 					<div className="flex items-center gap-2 text-neutral-500">
+						<select
+							value={prefs.pageSize}
+							onChange={(event) => setPref("pageSize", Number(event.target.value))}
+							aria-label="Rows per page"
+							title="Rows per page"
+							className="h-7 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 hover:border-blue-300"
+						>
+							{PAGE_SIZE_OPTIONS.map((size) => (
+								<option key={size} value={size}>
+									{size} / page
+								</option>
+							))}
+						</select>
 						<span className="hidden text-xs text-neutral-500 whitespace-nowrap sm:inline">
 							{pageRange.start} - {pageRange.end} of {pageRange.total}
 						</span>
@@ -660,7 +674,7 @@ export function MessageFolderPage({
 							<Button
 								variant="ghost"
 								size="sm"
-								disabled={offset + messages.length >= total || isLoading}
+								disabled={offset + rowsOnPage >= total || isLoading}
 								onClick={() => setOffset(offset + limit)}
 								aria-label="Next page"
 							>

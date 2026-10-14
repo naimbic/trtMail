@@ -40,6 +40,8 @@ export type MessageFilterOptions = {
 	title?: string;
 	limit?: number;
 	offset?: number;
+	/** Page by sender groups instead of single emails. */
+	group?: "sender";
 };
 
 export type MessageListResponse = {
