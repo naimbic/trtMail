@@ -18,7 +18,7 @@ export const DEFAULT_TRT_SIGNATURE: TrtSignatureFields = {
 	phones: ["+212660602820", "+212684496060"],
 };
 
-const DOT_COLORS = ["#2563eb", "#f59e0b", "#10b981", "#ef4444"];
+const DOT_COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#ef4444"];
 
 function esc(value: string): string {
 	return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -31,7 +31,9 @@ function esc(value: string): string {
  */
 export function buildTrtSignatureHtml(origin: string, fields: TrtSignatureFields = DEFAULT_TRT_SIGNATURE): string {
 	const base = origin.replace(/\/$/, "");
-	const dot = (color: string) => `<span style="color:${color};font-size:18px;line-height:14px;">&#8226;</span>&nbsp;`;
+	// Small flat dot with a soft glow (box-shadow); email clients without box-shadow support still get a plain dot.
+	const dot = (color: string) =>
+		`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background-color:${color};box-shadow:0 0 6px 2px ${color}59;margin-right:9px;vertical-align:middle;"></span>`;
 	const href = (url: string) => (/^https?:\/\//i.test(url) ? url : `https://${url}`);
 	const phones = fields.phones
 		.map((phone) => `<a href="tel:${esc(phone.replace(/\s/g, ""))}" style="color:#374151;text-decoration:none;">${esc(phone)}</a>`)

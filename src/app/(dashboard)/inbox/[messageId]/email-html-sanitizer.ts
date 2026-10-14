@@ -97,6 +97,24 @@ const ALLOWED_STYLE_PROPERTIES = new Set([
 	"border-style",
 	"border-top",
 	"border-width",
+	"border-collapse",
+	"border-spacing",
+	"border-top-color",
+	"border-top-style",
+	"border-top-width",
+	"border-right-color",
+	"border-right-style",
+	"border-right-width",
+	"border-bottom-color",
+	"border-bottom-style",
+	"border-bottom-width",
+	"border-left-color",
+	"border-left-style",
+	"border-left-width",
+	"border-top-left-radius",
+	"border-top-right-radius",
+	"border-bottom-left-radius",
+	"border-bottom-right-radius",
 	"color",
 	"display",
 	"font-family",
@@ -120,6 +138,10 @@ const ALLOWED_STYLE_PROPERTIES = new Set([
 	"padding-top",
 	"text-align",
 	"text-decoration",
+	"text-decoration-line",
+	"text-decoration-color",
+	"text-decoration-style",
+	"text-decoration-thickness",
 	"text-indent",
 	"text-transform",
 	"vertical-align",
@@ -213,7 +235,9 @@ function sanitizeElement(element: Element): void {
 const BLANK_CHARS = /[\s\u00a0\u200b\u200c\u200d\ufeff]/g;
 
 function isBlankBlock(element: Element): boolean {
-	if (!["P", "DIV", "SPAN", "FONT", "H1", "H2", "H3", "H4", "H5", "H6"].includes(element.tagName)) return false;
+	if (!["P", "DIV", "H1", "H2", "H3", "H4", "H5", "H6"].includes(element.tagName)) return false;
+	// An empty element with its own size/background/border is a design element (divider, dot, spacer box), not stray whitespace.
+	if (/height|width|background|border|box-shadow/i.test(element.getAttribute("style") ?? "")) return false;
 	if (element.querySelector("img, hr, table, a, ul, ol, pre, blockquote")) return false;
 	return (element.textContent ?? "").replace(BLANK_CHARS, "") === "";
 }
@@ -235,7 +259,7 @@ function tidyBlankSpace(root: Element): void {
 		if (prev1?.nodeName === "BR" && prev2?.nodeName === "BR") br.remove();
 	}
 	// 2. Runs of empty blocks collapse to a single one.
-	for (const block of Array.from(root.querySelectorAll("p, div, span, font, h1, h2, h3, h4, h5, h6"))) {
+	for (const block of Array.from(root.querySelectorAll("p, div, h1, h2, h3, h4, h5, h6"))) {
 		if (!block.isConnected || !isBlankBlock(block)) continue;
 		const prev = previousSignificantNode(block);
 		if (prev && prev.nodeType === Node.ELEMENT_NODE && isBlankBlock(prev as Element)) block.remove();
