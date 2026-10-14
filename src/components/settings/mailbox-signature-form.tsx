@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Code, PenLine } from "lucide-react";
+import { Code, PenLine, Sparkles } from "lucide-react";
 import { useSelectedMailbox } from "@/components/mailbox-provider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RichEditor } from "@/components/compose/rich-editor";
+import { buildTrtSignatureHtml } from "@/lib/email/signature-template";
+import { sanitizeEmailHtml } from "@/app/(dashboard)/inbox/[messageId]/email-html-sanitizer";
 import { updateMailboxSignature } from "./utils";
 
 export function MailboxSignatureForm() {
@@ -59,6 +61,21 @@ export function MailboxSignatureForm() {
 			<div className="space-y-2">
 				<div className="flex items-center justify-between">
 					<Label htmlFor="mailboxSignature">Signature for {address}</Label>
+					<div className="flex items-center gap-1">
+					<button
+						type="button"
+						disabled={!canManage || saving}
+						onClick={() => {
+							setSignature(buildTrtSignatureHtml(window.location.origin));
+							setHtmlMode(true);
+							setStatus(null);
+						}}
+						title="Animated logo on the left, contact lines with coloured dots on the right"
+						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+					>
+						<Sparkles className="h-3.5 w-3.5" />
+						TRT Digital template
+					</button>
 					<button
 						type="button"
 						onClick={() => {
@@ -70,6 +87,7 @@ export function MailboxSignatureForm() {
 						{htmlMode ? <PenLine className="h-3.5 w-3.5" /> : <Code className="h-3.5 w-3.5" />}
 						{htmlMode ? "Editor" : "HTML"}
 					</button>
+					</div>
 				</div>
 				{htmlMode ? (
 					<Textarea
@@ -91,6 +109,15 @@ export function MailboxSignatureForm() {
 							onChange={(nextHtml) => setSignature(nextHtml)}
 							placeholder={"Your name\nRole or company\nContact details"}
 							className="min-h-[130px]"
+						/>
+					</div>
+				)}
+				{htmlMode && signature.trim() && (
+					<div className="space-y-1.5">
+						<p className="text-xs font-medium text-neutral-500">Preview</p>
+						<div
+							className="overflow-x-auto rounded-lg border border-neutral-200 bg-white p-4"
+							dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(signature) ?? "" }}
 						/>
 					</div>
 				)}
