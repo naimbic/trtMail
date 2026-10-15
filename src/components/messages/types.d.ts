@@ -63,6 +63,10 @@ export type MessageSplitLayoutProps = {
 
 export type BulkMessageToolbarProps = {
 	selectedCount: number;
+	/** Total rows in the list; phones show "selected/total" instead of "N selected". */
+	total?: number;
+	/** Selected rows (sender groups when grouped), for the phone counter. */
+	selectedRows?: number;
 	hasUnreadSelection: boolean;
 	hideSelectedCount?: boolean;
 	onAction: (action: BulkMessageAction) => void;

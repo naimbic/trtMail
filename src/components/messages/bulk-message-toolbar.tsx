@@ -13,6 +13,8 @@ type Folder = { id: string; name: string; color?: string };
 
 export function BulkMessageToolbar({
 	selectedCount,
+	selectedRows,
+	total,
 	hasUnreadSelection,
 	hideSelectedCount = false,
 	onAction,
@@ -64,7 +66,10 @@ export function BulkMessageToolbar({
 	return (
 		<div className="flex min-w-0 items-center gap-2 text-neutral-600 w-full">
 			{!hideSelectedCount && (
-				<span className="mr-2 text-sm font-medium text-neutral-800">{selectedCount} selected</span>
+				<span className="mr-2 whitespace-nowrap text-sm font-medium tabular-nums text-neutral-800">
+					<span className="md:hidden">{total ? `${selectedRows ?? selectedCount}/${total}` : selectedCount}</span>
+					<span className="max-md:hidden">{selectedCount} selected</span>
+				</span>
 			)}
 			<Tooltip label="Archive">
 				<Button variant="ghost" size="sm" onClick={() => onAction("archive")} disabled={pending} aria-label="Archive">

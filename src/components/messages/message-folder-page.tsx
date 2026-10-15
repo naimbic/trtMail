@@ -604,13 +604,15 @@ export function MessageFolderPage({
 							checked={allVisibleSelected}
 							disabled={messages.length === 0}
 							onChange={(event) => toggleAllVisible(event.target.checked)}
-							className="h-4 w-4 rounded border-neutral-300"
+							className={`h-4 w-4 rounded border-neutral-300 ${selectedIds.length === 0 ? "max-md:hidden" : ""}`}
 							aria-label="Select all visible messages"
 						/>
 					</Tooltip>
 					{selectedIds.length > 0 && !compact ? (
 						<BulkMessageToolbar
 							selectedCount={selectedIds.length}
+							total={pageRange.total}
+							selectedRows={canGroup ? senderGroups.filter((group) => group.messages.some((m) => selectedIds.includes(m.id))).length : selectedIds.length}
 							hasUnreadSelection={hasUnreadSelection}
 							onAction={runSelectedAction}
 							onMoveToFolder={runSelectedFolderMove}
@@ -643,19 +645,22 @@ export function MessageFolderPage({
 				</div>
 				{(selectedIds.length === 0 || compact) && (
 					<div className="flex items-center gap-2 text-neutral-500">
-						<select
-							value={prefs.pageSize}
-							onChange={(event) => setPref("pageSize", Number(event.target.value))}
-							aria-label="Rows per page"
-							title="Rows per page"
-							className="h-7 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 hover:border-blue-300"
-						>
-							{PAGE_SIZE_OPTIONS.map((size) => (
-								<option key={size} value={size}>
-									{size} / page
-								</option>
-							))}
-						</select>
+						<span className="flex items-center gap-1 text-xs text-neutral-500">
+							<select
+								value={prefs.pageSize}
+								onChange={(event) => setPref("pageSize", Number(event.target.value))}
+								aria-label="Rows per page"
+								title="Rows per page"
+								className="h-7 rounded-md border border-neutral-200 bg-white px-1 text-xs text-neutral-600 hover:border-blue-300"
+							>
+								{PAGE_SIZE_OPTIONS.map((size) => (
+									<option key={size} value={size}>
+										{size}
+									</option>
+								))}
+							</select>
+							<span className="max-sm:hidden">/ page</span>
+						</span>
 						<span className="hidden text-xs text-neutral-500 whitespace-nowrap sm:inline">
 							{pageRange.start} - {pageRange.end} of {pageRange.total}
 						</span>
