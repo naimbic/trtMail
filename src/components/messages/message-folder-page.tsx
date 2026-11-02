@@ -659,7 +659,7 @@ export function MessageFolderPage({
 									</option>
 								))}
 							</select>
-							<span className="max-sm:hidden">/ page</span>
+							<span className={`whitespace-nowrap max-sm:hidden ${compact ? "hidden" : ""}`}>/ page</span>
 						</span>
 						<span className="hidden text-xs text-neutral-500 whitespace-nowrap sm:inline">
 							{pageRange.start} - {pageRange.end} of {pageRange.total}

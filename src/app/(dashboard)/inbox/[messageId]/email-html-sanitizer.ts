@@ -192,6 +192,39 @@ function sanitizeStyle(element: HTMLElement): void {
 	}
 }
 
+const FIXED_WIDTH_FLOOR_PX = 480;
+
+function pixelWidth(value: string | null | undefined): number {
+	const match = /^\s*(\d+(?:\.\d+)?)\s*(?:px)?\s*$/i.exec(value ?? "");
+	return match ? Number(match[1]) : 0;
+}
+
+/**
+ * Newsletter-style emails pin their layout to a ~600px column. Let those wide containers
+ * fill the reading pane instead, so the message uses all the available space.
+ */
+function fluidizeFixedWidth(element: HTMLElement): void {
+	if (!["TABLE", "DIV", "TD", "TH", "CENTER"].includes(element.tagName)) return;
+	let changed = false;
+	if (pixelWidth(element.getAttribute("width")) >= FIXED_WIDTH_FLOOR_PX) {
+		element.removeAttribute("width");
+		changed = true;
+	}
+	if (pixelWidth(element.style.width) >= FIXED_WIDTH_FLOOR_PX) {
+		element.style.width = "100%";
+		changed = true;
+	}
+	if (pixelWidth(element.style.maxWidth) >= FIXED_WIDTH_FLOOR_PX) {
+		element.style.maxWidth = "none";
+		changed = true;
+	}
+	if (pixelWidth(element.style.minWidth) >= FIXED_WIDTH_FLOOR_PX) {
+		element.style.minWidth = "0";
+		changed = true;
+	}
+	if (changed && element.tagName === "TABLE") element.style.width = "100%";
+}
+
 function sanitizeElement(element: Element): void {
 	const tag = element.tagName.toLowerCase();
 	if (!ALLOWED_TAGS.has(tag)) {
@@ -209,7 +242,10 @@ function sanitizeElement(element: Element): void {
 		if (!allowed || name.startsWith("on")) element.removeAttribute(attribute.name);
 	}
 
-	if (element instanceof HTMLElement) sanitizeStyle(element);
+	if (element instanceof HTMLElement) {
+		fluidizeFixedWidth(element);
+		sanitizeStyle(element);
+	}
 
 	if (tag === "a") {
 		const href = element.getAttribute("href");
