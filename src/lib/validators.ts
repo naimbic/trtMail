@@ -10,6 +10,8 @@ export const sendEmailSchema = z.object({
 	html: z.string().max(2 * 1024 * 1024).optional(),
 	text: z.string().max(2 * 1024 * 1024).optional(),
 	mailboxId: z.string().min(1).max(200),
+	/** false = send without open pixel / click redirects */
+	track: z.boolean().optional(),
 	attachments: z
 		.array(
 			z.object({

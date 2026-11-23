@@ -198,7 +198,7 @@ export async function GET(request: Request) {
 		: [];
 	const withAttachments = new Set(attachmentRows.map((row) => row.messageId));
 
-	const enrichedRows = rows.map(({ rawR2Key: _rawR2Key, ...message }) => {
+	const enrichedRows = rows.map(({ rawR2Key: _rawR2Key, trackingToken: _trackingToken, ...message }) => {
 		const contactMap = contactMapsByUserId.get(message.userId);
 		const accountName = message.mailboxId ? mailboxNameMap.get(message.mailboxId) : null;
 		return {

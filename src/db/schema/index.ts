@@ -208,11 +208,25 @@ export const messages = sqliteTable(
 		replied: integer("replied", { mode: "boolean" }).notNull().default(false),
 		snoozedUntil: integer("snoozed_until", { mode: "timestamp" }),
 		threadId: text("thread_id"),
+		// Mail tracking (outbound only). The token is random and appears only in tracking URLs.
+		trackingToken: text("tracking_token"),
+		sentAt: integer("sent_at", { mode: "timestamp" }),
+		deliveryStatus: text("delivery_status"),
+		deliveryDetail: text("delivery_detail"),
+		deliveredAt: integer("delivered_at", { mode: "timestamp" }),
+		bouncedAt: integer("bounced_at", { mode: "timestamp" }),
+		openCount: integer("open_count").notNull().default(0),
+		firstOpenedAt: integer("first_opened_at", { mode: "timestamp" }),
+		lastOpenedAt: integer("last_opened_at", { mode: "timestamp" }),
+		clickCount: integer("click_count").notNull().default(0),
+		firstClickedAt: integer("first_clicked_at", { mode: "timestamp" }),
+		lastClickedAt: integer("last_clicked_at", { mode: "timestamp" }),
 		createdAt: integer("created_at", { mode: "timestamp" })
 			.notNull()
 			.$defaultFn(() => new Date()),
 	},
 	(t) => [
+		uniqueIndex("messages_tracking_token_idx").on(t.trackingToken),
 		index("messages_user_created_idx").on(t.userId, t.createdAt),
 		index("messages_mailbox_idx").on(t.mailboxId),
 		index("messages_folder_idx").on(t.folderId),
@@ -239,6 +253,47 @@ export const messageAttachments = sqliteTable(
 			.$defaultFn(() => new Date()),
 	},
 	(t) => [index("message_attachments_message_idx").on(t.messageId)],
+);
+
+export const messageTrackingLinks = sqliteTable(
+	"message_tracking_links",
+	{
+		id: text("id").primaryKey(),
+		messageId: text("message_id")
+			.notNull()
+			.references(() => messages.id, { onDelete: "cascade" }),
+		linkKey: text("link_key").notNull(),
+		url: text("url").notNull(),
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+	},
+	(t) => [uniqueIndex("message_tracking_links_key_idx").on(t.messageId, t.linkKey)],
+);
+
+export const messageTrackingEvents = sqliteTable(
+	"message_tracking_events",
+	{
+		id: text("id").primaryKey(),
+		messageId: text("message_id")
+			.notNull()
+			.references(() => messages.id, { onDelete: "cascade" }),
+		// open | click | accepted | delivered | delayed | bounced
+		type: text("type").notNull(),
+		linkId: text("link_id"),
+		url: text("url"),
+		at: integer("at", { mode: "timestamp" }).notNull(),
+		// null = counted; otherwise why the hit was ignored (too_soon, scanner_burst, bot_ua…)
+		ignored: text("ignored"),
+		isFirst: integer("is_first", { mode: "boolean" }).notNull().default(false),
+		userAgent: text("user_agent"),
+		ipHash: text("ip_hash"),
+		detail: text("detail"),
+	},
+	(t) => [
+		index("message_tracking_events_message_idx").on(t.messageId, t.at),
+		index("message_tracking_events_first_idx").on(t.isFirst, t.at),
+	],
 );
 
 export const outboundJobs = sqliteTable("outbound_jobs", {
@@ -420,6 +475,7 @@ export const appSettings = sqliteTable("app_settings", {
 	id: text("id").primaryKey(),
 	appName: text("app_name").notNull().default("trtDigital Mail"),
 	iconKey: text("icon_key"),
+	mailTrackingEnabled: integer("mail_tracking_enabled", { mode: "boolean" }).notNull().default(true),
 	updatedAt: integer("updated_at", { mode: "timestamp" })
 		.notNull()
 		.$defaultFn(() => new Date()),
@@ -478,6 +534,8 @@ export const schema = {
 	apiKeys,
 	messages,
 	messageAttachments,
+	messageTrackingLinks,
+	messageTrackingEvents,
 	outboundJobs,
 	emailTemplates,
 	calendarEvents,

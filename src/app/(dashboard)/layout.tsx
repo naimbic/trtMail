@@ -17,6 +17,7 @@ import { NotificationToaster } from "@/components/notification-toaster";
 import { TabTitleBadge } from "@/components/tab-title-badge";
 import { UndoSnackbar } from "@/components/undo-snackbar";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { TrackingNotifier } from "@/components/tracking-notifier";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -45,6 +46,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <UndoSnackbar />
           <TabTitleBadge />
           <KeyboardShortcuts />
+          <TrackingNotifier />
         </>
       }
     >

@@ -65,6 +65,7 @@ export async function notifyDueReminders(env: CloudflareEnv): Promise<void> {
 				subject: `Reminder: ${reminder.title}`,
 				text: `This is your reminder (${label}) due ${when}.\n\n${reminder.title}\n${reminder.notes ?? ""}`.trim(),
 				html,
+				track: false,
 			});
 		} catch {
 			// In-app badge/list still surfaces it; ignore email failures.

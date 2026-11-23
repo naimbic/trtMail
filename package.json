@@ -1,6 +1,6 @@
 {
   "name": "trtmail",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,7 +15,7 @@
     "server:worker": "tsx scripts/server/worker.ts",
     "start:coolify": "node scripts/server/start.mjs",
     "typecheck": "tsc --noEmit --incremental false",
-    "test:server": "tsx --test scripts/server/runtime.test.ts"
+    "test:server": "tsx --test scripts/server/runtime.test.ts scripts/server/tracking.test.ts"
   },
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {

@@ -30,6 +30,10 @@ export const settingsNavSections: SettingsNavSection[] = [
 				label: "Appearance",
 			},
 			{
+				href: "/settings/tracking",
+				label: "Tracking",
+			},
+			{
 				href: "/settings/notifications",
 				label: "Notifications",
 			},

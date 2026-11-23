@@ -46,5 +46,6 @@ export async function workerCycle() {
  const settings=await getBackupSettings(env);
  if(settings?.retentionEnabled){const expired=db.prepare("SELECT id,r2_key FROM backups WHERE status IN ('completed','failed') AND created_at<?").all(Math.floor(Date.now()/1000)-settings.retentionDays*86400);for(const row of expired){if(row.r2_key)await env.BUCKET.delete(String(row.r2_key));db.prepare('DELETE FROM backups WHERE id=?').run(row.id);}}
  db.prepare("DELETE FROM _cf_server_state WHERE key LIKE 'login:%' AND CAST(substr(key,instr(substr(key,7),':')+7) AS INTEGER)<?").run(Math.floor(Date.now()/60000)-60);
+ db.prepare("DELETE FROM _cf_server_state WHERE (key LIKE 'trk:%' OR key LIKE 'trkall:%') AND CAST(replace(key,rtrim(key,'0123456789'),'') AS INTEGER)<?").run(Math.floor(Date.now()/60000)-60);
  db.prepare("INSERT OR REPLACE INTO _cf_server_state VALUES ('worker-heartbeat',?)").run(new Date().toISOString());
 }

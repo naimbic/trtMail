@@ -31,9 +31,10 @@ export function getServerEnv():CloudflareEnv {
       // Match exact address, '*' (allow all), or a domain entry like '@domain.com' / '*@domain.com'.
       const senderOk=allowed.some(a=>a==='*'||a===address||(a.startsWith('@')&&address.endsWith(a))||(a.startsWith('*@')&&address.endsWith(a.slice(1))));
       if(!senderOk)throw new Error(`Sender ${address} is not authorized. Add it to SMTP_ALLOWED_FROM (comma-separated), or set SMTP_ALLOWED_FROM=* to allow every address.`);
-      const result=await transporter.sendMail({...input,attachments:input.attachments?.map((a:any)=>({filename:a.filename,content:Buffer.from(a.content),contentType:a.type,contentDisposition:a.disposition,cid:a.contentId}))});
-      if(!result.accepted?.length || result.rejected?.length)throw new Error('SMTP did not accept all recipients');
-      return {messageId:result.messageId};
+      // Ask the server for delivery reports (used only if it supports the DSN extension; ignored otherwise).
+      const result=await transporter.sendMail({...input,dsn:{return:'headers',notify:['failure','delay','success'],recipient:address},attachments:input.attachments?.map((a:any)=>({filename:a.filename,content:Buffer.from(a.content),contentType:a.type,contentDisposition:a.disposition,cid:a.contentId}))});
+      if(!result.accepted?.length || result.rejected?.length)throw Object.assign(new Error(`SMTP did not accept all recipients${result.rejected?.length?`: ${result.rejected.map((r:any)=>typeof r==='string'?r:r.address).join(', ')}`:''}`),{response:result.response});
+      return {messageId:result.messageId,response:result.response,accepted:result.accepted.map((a:any)=>typeof a==='string'?a:a.address),rejected:[] as string[]};
     }},
     DATABASE_BACKUP_WORKFLOW:{create:async({id,params}:any)=>enqueue('backup',params,id)},
     INBOUND_QUEUE:{send:async(body:unknown)=>enqueue('inbound',body)},

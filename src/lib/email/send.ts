@@ -9,6 +9,7 @@ import { getAuthorizedSenderAddress } from "@/lib/email/sender";
 import { createAuditLog } from "@/lib/mailboxes/audit";
 import { storeMessageAttachments, validateAttachments } from "@/lib/email/attachments";
 import type { AttachmentContent } from "@/lib/email/attachment-types";
+import { prepareTrackedHtml, recordAccepted, recordSendFailure } from "@/lib/tracking/service";
 
 export type SendEmailInput = {
 	userId: string;
@@ -22,6 +23,8 @@ export type SendEmailInput = {
 	headers?: Record<string, string>;
 	mailboxId: string;
 	attachments?: AttachmentContent[];
+	/** Set false to send this mail without the open pixel and click redirects. */
+	track?: boolean;
 };
 
 /** Clean a comma-separated recipient list: trim each address, drop blanks, re-join.
@@ -87,6 +90,14 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 		}),
 	});
 
+	// Tracked copy for the wire only; the stored mail keeps the original HTML.
+	let trackedHtml: string | null = null;
+	try {
+		trackedHtml = await prepareTrackedHtml(env, messageId, input.html, { track: input.track });
+	} catch (error) {
+		console.error("Mail tracking could not be prepared; sending without it.", error);
+	}
+
 	try {
 		const response = await env.EMAIL.send({
 			from: sender.fromAddr,
@@ -95,7 +106,7 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 			...(bcc ? { bcc } : {}),
 			subject: input.subject,
 			headers: input.headers,
-			html: input.html,
+			html: trackedHtml ?? input.html,
 			text: input.text,
 			attachments: attachments.map((attachment) =>
 				attachment.disposition === "inline" && attachment.contentId
@@ -119,6 +130,8 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 			.update(messages)
 			.set({ status: "sent", providerMessageId: response.messageId })
 			.where(eq(messages.id, messageId));
+		const accepted = response as { response?: string; accepted?: string[]; rejected?: string[] };
+		await recordAccepted(env, messageId, accepted).catch(() => {});
 		await db.update(outboundJobs).set({ status: "sent", updatedAt: new Date() }).where(eq(outboundJobs.id, jobId));
 
 		await dispatchWebhooks(env, input.userId, "message.outbound", {
@@ -138,6 +151,7 @@ export async function sendEmail(env: CloudflareEnv, input: SendEmailInput): Prom
 	} catch (err) {
 		const error = err instanceof Error ? err.message : "Send failed";
 		await db.update(messages).set({ status: "failed" }).where(eq(messages.id, messageId));
+		await recordSendFailure(env, messageId, (err as { response?: string })?.response || error).catch(() => {});
 		await db
 			.update(outboundJobs)
 			.set({ status: "failed", error, updatedAt: new Date() })

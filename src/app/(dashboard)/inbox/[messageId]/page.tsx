@@ -27,6 +27,7 @@ import {
 import { extractCloudAttachments } from "./cloud-attachment-utils";
 import { sanitizeEmailHtml } from "./email-html-sanitizer";
 import { linkify } from "./linkify";
+import { TrackingTimeline } from "@/components/tracking/tracking-timeline";
 import { tidyPlainText } from "@/lib/email/tidy";
 
 export default function MessageDetailPage() {
@@ -184,6 +185,9 @@ export default function MessageDetailPage() {
             {dayjs(message.createdAt).format("MMM DD, YYYY, hh:mmA")}
           </p>
         </div>
+        {message.direction === "outbound" && message.status !== "draft" && (
+          <TrackingTimeline message={message} />
+        )}
         <div className="mail-body w-full min-w-0 max-w-none overflow-x-auto break-words text-[15px] leading-[1.55] [&_table]:max-w-full [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_iframe]:max-w-full [&_video]:max-w-full leading-relaxed text-neutral-800 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-words [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-200 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-600 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_p]:my-2 [&_p:empty]:hidden [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6">
           {htmlBody ? (
             <div dangerouslySetInnerHTML={{ __html: htmlBody }} />

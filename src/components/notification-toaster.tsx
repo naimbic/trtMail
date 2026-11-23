@@ -11,7 +11,7 @@ import { isDesktopEnabled, isSoundEnabled } from "@/lib/notification-prefs";
  * Also fires an OS notification when the tab is in the background.
  */
 
-type Toast = { id: number; title: string; body?: string };
+type Toast = { id: number; title: string; body?: string; href?: string };
 
 // Soft two-note "ding" via WebAudio — no audio asset to ship.
 function playDing() {
@@ -83,8 +83,34 @@ export function NotificationToaster() {
 			}
 		}
 
+		// Generic toast (e.g. "opened" / "clicked" tracking alerts): detail = { title, body?, href? }.
+		function onNotify(event: Event) {
+			const detail = (event as CustomEvent<{ title?: string; body?: string; href?: string }>).detail;
+			if (!detail?.title) return;
+			playDing();
+			const id = ++idRef.current;
+			setToasts((current) => [...current.slice(-3), { id, title: detail.title!, body: detail.body, href: detail.href }]);
+			setTimeout(() => setToasts((current) => current.filter((t) => t.id !== id)), 9000);
+			try {
+				if (isDesktopEnabled() && typeof Notification !== "undefined" && Notification.permission === "granted" && document.visibilityState !== "visible") {
+					const n = new Notification(detail.title, { body: detail.body ?? "trtMail", icon: "/icon-96.png" });
+					n.onclick = () => {
+						window.focus();
+						if (detail.href) window.location.assign(detail.href);
+						n.close();
+					};
+				}
+			} catch {
+				/* no-op */
+			}
+		}
+
 		window.addEventListener("trtmail:new-mail", onNewMail);
-		return () => window.removeEventListener("trtmail:new-mail", onNewMail);
+		window.addEventListener("trtmail:notify", onNotify);
+		return () => {
+			window.removeEventListener("trtmail:new-mail", onNewMail);
+			window.removeEventListener("trtmail:notify", onNotify);
+		};
 	}, []);
 
 	if (toasts.length === 0) return null;
@@ -95,7 +121,7 @@ export function NotificationToaster() {
 				<button
 					key={toast.id}
 					type="button"
-					onClick={() => window.location.assign("/inbox")}
+					onClick={() => window.location.assign(toast.href ?? "/inbox")}
 					className="pointer-events-auto flex w-72 items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3 text-left shadow-lg transition hover:border-blue-300"
 				>
 					<span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">

@@ -28,6 +28,18 @@ export type Message = {
 	replied?: boolean;
 	hasAttachments?: boolean;
 	snoozedUntil?: string | null;
+	// Outbound tracking summary (see /api/messages/[id]/tracking for the timeline)
+	deliveryStatus?: "queued" | "sent" | "delivered" | "bounced" | "failed" | null;
+	deliveryDetail?: string | null;
+	sentAt?: string | null;
+	deliveredAt?: string | null;
+	bouncedAt?: string | null;
+	openCount?: number;
+	firstOpenedAt?: string | null;
+	lastOpenedAt?: string | null;
+	clickCount?: number;
+	firstClickedAt?: string | null;
+	lastClickedAt?: string | null;
 	threadId: string | null;
 	createdAt: string;
 };

@@ -11,6 +11,8 @@ import { sendMailboxAutoReply } from "@/lib/email/auto-reply";
 import { getMailboxAccessLevel } from "@/lib/mailboxes/access";
 import { listMessageAttachments, storeMessageAttachments } from "@/lib/email/attachments";
 import { getUnsubscribeUrlFromRawR2Key } from "@/lib/email/unsubscribe";
+import { parseDeliveryReports } from "@/lib/tracking/dsn";
+import { applyDeliveryReport } from "@/lib/tracking/service";
 import type { SessionUser } from "@/lib/auth/types";
 import {
 	getMailboxNotificationUserIds,
@@ -107,6 +109,13 @@ export async function processInboundMessage(
 		throw error;
 	}
 
+	// A bounce / delivery report: attach its result to the mail it is about.
+	try {
+		for (const report of await parseDeliveryReports(buffer)) await applyDeliveryReport(env, report);
+	} catch (error) {
+		console.error("Delivery report could not be processed.", error);
+	}
+
 	if (destination.status === "received") {
 		try {
 			await sendMailboxAutoReply(env, {
@@ -169,7 +178,8 @@ export async function getMessageWithBody(env: CloudflareEnv, userId: string, mes
 	const contactNames = await getMessageContactNames(env, userId, message.fromAddr, message.toAddr);
 	const attachments = await listMessageAttachments(env, messageId);
 	const unsubscribeUrl = await getUnsubscribeUrlFromRawR2Key(env, message.rawR2Key);
-	return { message: { ...message, ...contactNames }, body: message, attachments, unsubscribeUrl };
+	const { trackingToken: _trackingToken, ...safeMessage } = message;
+	return { message: { ...safeMessage, ...contactNames }, body: safeMessage, attachments, unsubscribeUrl };
 }
 
 export async function getMessageWithBodyForUser(env: CloudflareEnv, user: SessionUser, messageId: string) {
@@ -181,7 +191,8 @@ export async function getMessageWithBodyForUser(env: CloudflareEnv, user: Sessio
 	const contactNames = await getMessageContactNames(env, message.userId, message.fromAddr, message.toAddr);
 	const attachments = await listMessageAttachments(env, messageId);
 	const unsubscribeUrl = await getUnsubscribeUrlFromRawR2Key(env, message.rawR2Key);
-	return { message: { ...message, ...contactNames }, body: message, attachments, unsubscribeUrl };
+	const { trackingToken: _trackingToken, ...safeMessage } = message;
+	return { message: { ...safeMessage, ...contactNames }, body: safeMessage, attachments, unsubscribeUrl };
 }
 
 export async function getMessageMetadataForUser(env: CloudflareEnv, user: SessionUser, messageId: string) {

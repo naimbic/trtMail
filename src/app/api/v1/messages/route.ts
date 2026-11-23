@@ -50,5 +50,6 @@ export async function GET(request: Request) {
 		.orderBy(desc(messages.createdAt))
 		.limit(limit);
 
-	return NextResponse.json({ messages: rows });
+	// The tracking token only belongs in the links sent to recipients.
+	return NextResponse.json({ messages: rows.map(({ trackingToken: _trackingToken, ...message }) => message) });
 }

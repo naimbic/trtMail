@@ -23,6 +23,7 @@ import { emitUndo, moveMessagesToInbox } from "@/lib/messages/undo";
 import { BulkMessageToolbar } from "./bulk-message-toolbar";
 import { MessageListRowActions } from "./message-list-row-actions";
 import { dispatchMessageCountsDelta, toggleMessagePin, toggleMessageStar } from "./message-list-row-actions-utils";
+import { TrackingChips } from "@/components/tracking/tracking-chips";
 import { MessageNavigationProgress, useMessageNavigation } from "./message-navigation";
 import type { Message } from "@/hooks/types";
 import type { MessageFolderConfig, MessageFolderPageProps, MessageGroupInfo, MessageListRowProps } from "./types";
@@ -324,6 +325,7 @@ function MessageListRow({
 				</span>
 				{/* Line 3 — preview */}
 				{prefs.showPreview && <span className="block truncate text-[13px] leading-5 text-neutral-500">{preview}</span>}
+				{message.direction === "outbound" && <TrackingChips message={rowMessage} className="mt-1" />}
 			</span>
 			<span className="flex shrink-0 flex-col items-end gap-1">
 				<span

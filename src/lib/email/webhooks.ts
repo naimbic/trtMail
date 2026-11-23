@@ -3,7 +3,13 @@ import { getDb } from "@/db";
 import { webhookDeliveries, webhooks } from "@/db/schema";
 import { newId } from "@/lib/ids";
 
-export type WebhookEventType = "message.inbound" | "message.outbound" | "message.failed";
+export type WebhookEventType =
+	| "message.inbound"
+	| "message.outbound"
+	| "message.failed"
+	| "message.opened"
+	| "message.clicked"
+	| "message.bounced";
 
 export async function dispatchWebhooks(
 	env: CloudflareEnv,
